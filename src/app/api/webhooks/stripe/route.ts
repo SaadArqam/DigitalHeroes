@@ -138,16 +138,50 @@ async function handleCheckoutSessionCompleted(
   supabase: any
 ) {
   try {
+    console.log('Webhook received: checkout.session.completed');
+    console.log('Metadata:', session.metadata);
+
     const { supabase_user_id, plan } = session.metadata || {};
-    
-    if (!supabase_user_id || !plan) {
-      console.error('Missing metadata in checkout session');
+
+    if (!supabase_user_id) {
+      console.error('FATAL: Missing supabase_user_id in checkout session metadata. Cannot write subscription.');
       return;
     }
 
-    console.log(`Checkout session completed for user: ${supabase_user_id}, plan: ${plan}`);
+    if (!plan) {
+      console.error('FATAL: Missing plan in checkout session metadata.');
+      return;
+    }
+
+    const subscriptionId = session.subscription as string | null;
+    if (!subscriptionId) {
+      console.error('FATAL: No subscription ID on checkout session. Session mode must be "subscription".');
+      return;
+    }
+
+    // Retrieve the full subscription object from Stripe, then upsert into Supabase.
+    // checkout.session.completed fires before customer.subscription.created in some
+    // configurations, so we fetch it explicitly to ensure we always have fresh data.
+    const stripe = getStripe();
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    console.log(`Subscription ${subscriptionId} retrieved from Stripe, status: ${subscription.status}`);
+
+    // Attach supabase_user_id to the Stripe customer so subscription-level events
+    // (invoice.paid, customer.subscription.updated) can also resolve the user.
+    const customerId = subscription.customer as string;
+    try {
+      await stripe.customers.update(customerId, {
+        metadata: { supabase_user_id },
+      });
+    } catch (err) {
+      console.warn('Could not update Stripe customer metadata (non-fatal):', err);
+    }
+
+    await handleSubscriptionUpsert(subscription, supabase, supabase_user_id);
   } catch (error) {
     console.error('Error handling checkout session completed:', error);
+    throw error;
   }
 }
 
@@ -183,18 +217,25 @@ async function handleInvoicePaymentFailed(
 
 async function handleSubscriptionUpsert(
   subscription: Stripe.Subscription,
-  supabase: any
+  supabase: any,
+  supabaseUserIdOverride?: string
 ) {
   try {
     const customerId = subscription.customer as string;
-    const stripe = getStripe();
-    const customer = await stripe.customers.retrieve(customerId);
-    const supabaseUserId = (customer as Stripe.Customer).metadata?.supabase_user_id;
+    let supabaseUserId = supabaseUserIdOverride;
 
     if (!supabaseUserId) {
-      console.error('No supabase_user_id found in customer metadata');
+      const stripe = getStripe();
+      const customer = await stripe.customers.retrieve(customerId);
+      supabaseUserId = (customer as Stripe.Customer).metadata?.supabase_user_id;
+    }
+
+    if (!supabaseUserId) {
+      console.error('No supabase_user_id found in customer metadata or override');
       return;
     }
+
+    console.log(`handleSubscriptionUpsert: user=${supabaseUserId}, sub=${subscription.id}, status=${subscription.status}`);
 
     const priceId = subscription.items.data[0]?.price?.id;
     let plan: 'monthly' | 'yearly' = 'monthly';
