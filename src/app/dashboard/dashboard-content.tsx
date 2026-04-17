@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { getUserSubscription } from '@/app/actions/subscriptions';
 import { getUserScores } from '@/app/actions/scores';
 import { getUserCharityPreferences } from '@/app/actions/charities';
@@ -82,20 +83,25 @@ function DashboardContentComponent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 py-12 px-4 flex items-center justify-center transition-all">
-        <div className="text-center animate-pulse">
-           <div className="w-16 h-16 bg-brand-indigo/10 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-             <div className="w-8 h-8 rounded-full border-4 border-brand-indigo/30 border-t-brand-indigo animate-spin"></div>
+      <div className="min-h-screen bg-[#FDFDFD] py-12 px-4 flex items-center justify-center z-50 fixed inset-0">
+         <motion.div 
+           initial={{ opacity: 0, scale: 0.9 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="relative"
+         >
+           <div className="absolute inset-0 bg-indigo-500/10 blur-3xl rounded-full"></div>
+           <div className="w-20 h-20 bg-white/50 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl flex items-center justify-center relative z-10 overflow-hidden">
+             <div className="w-10 h-10 border-[5px] border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
            </div>
-           <div className="h-6 bg-slate-200 rounded-full w-48 mx-auto mb-4"></div>
-           <div className="h-4 bg-slate-200 rounded-full w-32 mx-auto"></div>
-        </div>
+         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-indigo-100 pb-24 relative">
+    <div className="min-h-screen bg-slate-50/50 selection:bg-indigo-100 pb-24 relative overflow-hidden">
+      <div className="absolute top-0 w-full h-[500px] bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none -z-10"></div>
+      
       <Navbar />
       
       {/* Dynamic Overlay: Score Entry Modal */}
@@ -111,16 +117,14 @@ function DashboardContentComponent() {
             <ScoreEntry 
               onScoreAdded={() => {
                 setShowScoreModal(false);
-                syncData(); // Instantly fetch new data to update scores display automatically
+                syncData(); 
               }} 
             />
           </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
-        
-        {/* Stripe Redirect Success Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 z-10 relative">
         {showSuccessBanner && (
           <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
             <Card variant="dark" className="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 border-indigo-500/30 overflow-hidden relative group">
@@ -145,18 +149,24 @@ function DashboardContentComponent() {
           </div>
         )}
 
-        {/* Charity Selector Enforcement (Interrupts UX if missing) */}
         {!hasSelectedCharity ? (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
              <CharitySelector onComplete={syncData} />
           </div>
         ) : (
           <div className="animate-in fade-in duration-700">
-            <div className="flex flex-col lg:flex-row justify-between items-end mb-12 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="flex flex-col lg:flex-row justify-between items-end mb-14 gap-6"
+            >
               <div>
-                <Badge variant="indigo" className="mb-4 shadow-sm">Live Dashboard</Badge>
-                <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase drop-shadow-sm">
-                  Player <span className="text-brand-indigo">Terminal</span>
+                <span className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-full shadow-sm text-xs font-black uppercase tracking-widest text-slate-500 mb-6">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Network Linked
+                </span>
+                <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase drop-shadow-sm">
+                  Player <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-800">Terminal</span>
                 </h1>
               </div>
               <div className="flex gap-3">
@@ -167,7 +177,7 @@ function DashboardContentComponent() {
                    New Entry
                  </Button>
               </div>
-            </div>
+            </motion.div>
 
             {error && (
               <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-3xl text-red-700 font-bold flex items-center gap-4">
@@ -180,21 +190,34 @@ function DashboardContentComponent() {
               </div>
             )}
 
-            {/* Core Dashboard UI Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-               <div className="lg:col-span-2 space-y-8">
-                  <DrawsCard />
-                  <div className="grid md:grid-cols-2 gap-8">
+            {/* Cinematic Grid Layout */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+            >
+               {/* Left Feature Column */}
+               <div className="col-span-1 lg:col-span-8 space-y-8">
+                  <div className="h-[400px]">
+                    <DrawsCard />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-8 h-auto md:h-[450px]">
                      <ScoresCard scores={scores} onAddClick={() => setShowScoreModal(true)} />
                      <WinningsCard results={drawResults} />
                   </div>
                </div>
 
-               <div className="space-y-8">
-                  <SubscriptionCard subscription={subscription} />
-                  <CharityCard preferences={charityPrefs} onConfigClick={() => router.push('/dashboard/charity')} />
+               {/* Right Utility Column */}
+               <div className="col-span-1 lg:col-span-4 space-y-8 flex flex-col h-full lg:h-[882px]">
+                  <div className="flex-1">
+                     <SubscriptionCard subscription={subscription} />
+                  </div>
+                  <div className="flex-1">
+                     <CharityCard preferences={charityPrefs} onConfigClick={() => router.push('/dashboard/charity')} />
+                  </div>
                </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </div>
@@ -206,11 +229,10 @@ function DashboardContentComponent() {
 export default function DashboardContent() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 py-24 px-4 text-center">
-        <div className="animate-pulse space-y-4">
-          <div className="h-12 bg-slate-200 rounded-3xl w-64 mx-auto"></div>
-          <div className="h-4 bg-slate-200 rounded-3xl w-96 mx-auto"></div>
-        </div>
+      <div className="min-h-screen bg-slate-50 py-24 px-4 text-center z-50 fixed inset-0 flex items-center justify-center">
+         <div className="w-20 h-20 bg-white/50 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl flex items-center justify-center relative z-10 overflow-hidden">
+             <div className="w-10 h-10 border-[5px] border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
+         </div>
       </div>
     }>
       <DashboardContentComponent />

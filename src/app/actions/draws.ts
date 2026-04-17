@@ -3,142 +3,117 @@
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
-// Helper to reliably bypass RLS for background draw processing
-function getAdminSupabase() {
-  return createAdminClient(
+const TIER_PERCENTAGES = {
+  jackpot: 0.40, // 5 match
+  mid: 0.35,     // 4 match
+  low: 0.25      // 3 match
+};
+
+const PLAN_PRICES = {
+  monthly: 50,
+  yearly: 500
+};
+
+export async function runDraw() {
+  const supabaseSession = await createClient();
+  const { data: { user } } = await supabaseSession.auth.getUser();
+
+  const { data: profile } = await supabaseSession
+    .from('profiles')
+    .select('is_admin')
+    .eq('user_id', user?.id)
+    .maybeSingle();
+
+  if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
+
+  const adminSupabase = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
-}
 
-// Generate 5 unique random numbers between 1 and 45
-function generateWinningNumbers(): number[] {
-  const numbers = new Set<number>();
-  while (numbers.size < 5) {
-    const randomNum = Math.floor(Math.random() * 45) + 1;
-    numbers.add(randomNum);
-  }
-  return Array.from(numbers).sort((a, b) => a - b);
-}
+  // 1. Calculate Prize Pool
+  const { data: subs } = await adminSupabase
+    .from('subscriptions')
+    .select('plan')
+    .eq('status', 'active');
 
-export async function executeMonthlyDraw() {
-  const runId = Math.random().toString(36).substring(7);
-  console.info(`[DRAW_ENGINE_${runId}] Initiating monthly draw protocol...`);
+  let totalPool = 0;
+  (subs || []).forEach(sub => {
+    totalPool += PLAN_PRICES[sub.plan as keyof typeof PLAN_PRICES] || 0;
+  });
 
-  try {
-    const supabaseSession = await createClient();
-    const { data: { user }, error: authError } = await supabaseSession.auth.getUser();
+  const allocations = {
+    jackpot: totalPool * TIER_PERCENTAGES.jackpot,
+    mid: totalPool * TIER_PERCENTAGES.mid,
+    low: totalPool * TIER_PERCENTAGES.low
+  };
 
-    if (authError || !user) {
-      console.warn(`[DRAW_ENGINE_${runId}] Unauthorized execution attempt (No user).`);
-      return { success: false, message: 'Unauthorized: Session missing' };
-    }
+  // 2. Draw Mechanics
+  const winningNumbers = new Set<number>();
+  while (winningNumbers.size < 5) winningNumbers.add(Math.floor(Math.random() * 45) + 1);
+  const finalNumbers = Array.from(winningNumbers).sort((a, b) => a - b);
 
-    // Verify Admin
-    const { data: profile, error: profileError } = await supabaseSession
-      .from('profiles')
-      .select('is_admin')
-      .eq('user_id', user.id)
-      .maybeSingle();
+  const { data: draw, error: drawError } = await adminSupabase
+    .from('draws')
+    .insert({ winning_numbers: finalNumbers, status: 'completed' })
+    .select()
+    .single();
 
-    if (profileError || !profile?.is_admin) {
-      console.warn(`[DRAW_ENGINE_${runId}] Unauthorized execution attempt by user ${user.id}. Not an admin.`);
-      return { success: false, message: 'Unauthorized: Invalid permissions' };
-    }
+  if (drawError || !draw) throw new Error('Draw creation failed');
 
-    console.info(`[DRAW_ENGINE_${runId}] Admin verification passed for ${user.id}. Procuring Service Role Client.`);
-    const adminSupabase = getAdminSupabase();
-    
-    // 1. Draw the numbers
-    const winningNumbers = generateWinningNumbers();
-    console.info(`[DRAW_ENGINE_${runId}] Numbers securely generated: [${winningNumbers.join(', ')}]`);
+  // 3. Process Scores
+  const { data: scores } = await adminSupabase
+    .from('scores')
+    .select('user_id, score')
+    .order('date', { ascending: false });
 
-    // 2. Insert the draw record
-    const { data: draw, error: drawError } = await adminSupabase
-      .from('draws')
-      .insert({ winning_numbers: winningNumbers, status: 'completed' })
-      .select()
-      .single();
-
-    if (drawError || !draw) {
-      console.error(`[DRAW_ENGINE_${runId}] CRITICAL: Failed to create core draw record.`, drawError);
-      throw new Error('Failed to create draw record: ' + (drawError?.message || 'Unknown DB error'));
-    }
-
-    console.info(`[DRAW_ENGINE_${runId}] Core draw record mapped. Draw ID: ${draw.id}`);
-
-    // 3. Fetch ALL user scores
-    const { data: allScores, error: scoreError } = await adminSupabase
-      .from('scores')
-      .select('user_id, score');
-
-    if (scoreError) {
-      console.error(`[DRAW_ENGINE_${runId}] CRITICAL: Failed to fetch population scores.`, scoreError);
-      throw new Error('Failed to fetch user scores: ' + scoreError.message);
-    }
-
-    console.info(`[DRAW_ENGINE_${runId}] Ingested ${allScores?.length || 0} scores for evaluation.`);
-
-    // Group scores by user
-    const userScoresMap = new Map<string, number[]>();
-    (allScores || []).forEach(s => {
-      const existing = userScoresMap.get(s.user_id) || [];
+  const userScoresMap = new Map<string, number[]>();
+  (scores || []).forEach(s => {
+    const existing = userScoresMap.get(s.user_id) || [];
+    if (existing.length < 5) {
       existing.push(s.score);
       userScoresMap.set(s.user_id, existing);
-    });
-
-    console.info(`[DRAW_ENGINE_${runId}] Aggregated active population pool: ${userScoresMap.size} users.`);
-
-    // 4. Calculate Matches
-    const winnersToInsert: any[] = [];
-
-    userScoresMap.forEach((userScores, userId) => {
-      const matchCount = userScores.filter(score => winningNumbers.includes(score)).length;
-
-      if (matchCount >= 3) {
-        let prizeTier = 'low';
-        if (matchCount === 4) prizeTier = 'mid';
-        if (matchCount === 5) prizeTier = 'jackpot';
-
-        winnersToInsert.push({
-          draw_id: draw.id,
-          user_id: userId,
-          match_count: matchCount,
-          prize_tier: prizeTier,
-          status: 'unclaimed'
-        });
-      }
-    });
-
-    console.info(`[DRAW_ENGINE_${runId}] Match evaluation complete. Validating ${winnersToInsert.length} winner payouts.`);
-
-    // 5. Insert Winners into DB
-    if (winnersToInsert.length > 0) {
-      const { error: insertError } = await adminSupabase
-        .from('draw_results')
-        .insert(winnersToInsert);
-
-      if (insertError) {
-        console.error(`[DRAW_ENGINE_${runId}] CRITICAL: Failed to save winners matrix into database.`, insertError);
-        throw new Error('Failed to save winners: ' + insertError.message);
-      }
     }
+  });
 
-    console.info(`[DRAW_ENGINE_${runId}] Protocol finished successfully. Live dispatch returning to admin client.`);
+  // 4. Find Winners by Tier
+  const tierCounts = { jackpot: 0, mid: 0, low: 0 };
+  const rawWinners: any[] = [];
+
+  userScoresMap.forEach((userScores, userId) => {
+    const matchCount = userScores.filter(score => finalNumbers.includes(score)).length;
+    let tier: keyof typeof tierCounts | null = null;
+    
+    if (matchCount === 5) tier = 'jackpot';
+    else if (matchCount === 4) tier = 'mid';
+    else if (matchCount === 3) tier = 'low';
+
+    if (tier) {
+      tierCounts[tier]++;
+      rawWinners.push({ userId, tier, matchCount });
+    }
+  });
+
+  // 5. Finalize Payouts (Distribute equally among winners in tier)
+  const winnersToInsert = rawWinners.map(winner => {
+    const tierTotal = allocations[winner.tier as keyof typeof allocations];
+    const winnersInTier = tierCounts[winner.tier as keyof typeof tierCounts];
+    const userWinnings = winnersInTier > 0 ? (tierTotal / winnersInTier) : 0;
 
     return {
-      success: true,
-      message: `Draw Complete! Winning logic deployed.`,
-      data: {
-        winningNumbers,
-        winnerCount: winnersToInsert.length
-      }
+      draw_id: draw.id,
+      user_id: winner.userId,
+      match_count: winner.matchCount,
+      prize_tier: winner.tier,
+      winnings: parseFloat(userWinnings.toFixed(2)),
+      status: 'pending'
     };
+  });
 
-  } catch (error) {
-    console.error(`[DRAW_ENGINE_ERROR] Absolute failure during execution block.`, error);
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown systems error' };
+  if (winnersToInsert.length > 0) {
+    await adminSupabase.from('draw_results').insert(winnersToInsert);
   }
-}
 
+  return { success: true, winning_numbers: finalNumbers, payout_metrics: allocations };
+}
