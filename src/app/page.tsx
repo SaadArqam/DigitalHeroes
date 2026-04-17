@@ -36,7 +36,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              DigitalHeroes
+              GreenJack
             </Link>
             <Link 
               href="/subscribe" 
@@ -296,7 +296,7 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-4">
-                DigitalHeroes
+                GreenJack
               </h3>
               <p className="text-gray-500">
                 Turning passion into purpose, one swing at a time.
@@ -319,11 +319,11 @@ export default function Home() {
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">Contact</h4>
-              <p className="text-gray-500">support@digitalheroes.com</p>
+              <p className="text-gray-500">support@greenjack.com</p>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
-            <p>© 2024 DigitalHeroes. All rights reserved.</p>
+            <p>© 2024 GreenJack. All rights reserved.</p>
           </div>
         </div>
       </footer>

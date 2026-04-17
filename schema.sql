@@ -1,4 +1,4 @@
--- DigitalHeroes Full Database Schema
+-- GreenJack Full Database Schema
 -- Run this in Supabase SQL Editor to create all tables and RLS policies
 
 -- ============================================
