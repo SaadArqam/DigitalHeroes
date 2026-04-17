@@ -42,12 +42,20 @@ export async function middleware(request: NextRequest) {
 
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .select('status')
+      .select('*')
       .eq('user_id', user.id)
-      .single();
+      .eq('status', 'active')
+      .maybeSingle();
 
-    if (subError || subscription?.status !== 'active') {
-      console.log(`MIDDLEWARE: Missing or inactive subscription for user ${user.id}. Redirecting to /subscribe. Error:`, subError);
+    console.log("Subscription check:", subscription);
+
+    if (subError) {
+      console.error(`MIDDLEWARE: Error checking subscription for user ${user.id}. Error:`, subError);
+      return NextResponse.redirect(new URL('/subscribe', request.url));
+    }
+
+    if (!subscription) {
+      console.log(`MIDDLEWARE: Missing or inactive subscription for user ${user.id}. Redirecting to /subscribe.`);
       return NextResponse.redirect(new URL('/subscribe', request.url));
     } else {
       console.log(`MIDDLEWARE: Active subscription found for user ${user.id}. Allowing /dashboard access.`);
@@ -59,9 +67,14 @@ export async function middleware(request: NextRequest) {
       .from('profiles')
       .select('is_admin')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (error || !profile?.is_admin) {
+    if (error) {
+      console.error(`MIDDLEWARE: Error checking admin status for user ${user.id}. Error:`, error);
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    if (!profile || !profile.is_admin) {
       console.log(`MIDDLEWARE: Non-admin user ${user.id} attempting to access /admin. Redirecting to /dashboard.`);
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
