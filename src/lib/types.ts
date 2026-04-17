@@ -44,3 +44,28 @@ export interface CheckoutSessionResponse {
   sessionId?: string;
   url?: string;
 }
+
+export interface Charity {
+  id: string;
+  name: string;
+  description: string;
+  image_url: string;
+  is_featured: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserCharityPreference {
+  id: string;
+  user_id: string;
+  charity_id: string;
+  contribution_percentage: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CharityPreferenceResponse {
+  success: boolean;
+  message: string;
+  data?: UserCharityPreference[];
+}
