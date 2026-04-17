@@ -12,13 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-// New Modular Dashboard Components
+// Modular Dashboard Sub-Sections
 import { SubscriptionCard } from '@/components/dashboard/SubscriptionCard';
 import { ScoresCard } from '@/components/dashboard/ScoresCard';
 import { CharityCard } from '@/components/dashboard/CharityCard';
 import { WinningsCard } from '@/components/dashboard/WinningsCard';
 import { DrawsCard } from '@/components/dashboard/DrawsCard';
-
 import { CharitySelector } from '@/components/dashboard/CharitySelector';
 import ScoreEntry from '@/components/score-entry';
 
@@ -31,10 +30,9 @@ function DashboardContentComponent() {
   const [error, setError] = useState<string>('');
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   
-  // Modal State
   const [showScoreModal, setShowScoreModal] = useState(false);
 
-  // Real Data State
+  // Core Data States
   const [subscription, setSubscription] = useState<any>(null);
   const [scores, setScores] = useState<any[]>([]);
   const [charityPrefs, setCharityPrefs] = useState<any[]>([]);
@@ -60,6 +58,7 @@ function DashboardContentComponent() {
   const syncData = async () => {
     setSyncing(true);
     try {
+      // Parallelize all Supabase network requests for speed
       const [subRes, scoreRes, charityRes, drawRes] = await Promise.all([
         getUserSubscription(),
         getUserScores(),
@@ -83,9 +82,11 @@ function DashboardContentComponent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 py-12 px-4 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 py-12 px-4 flex items-center justify-center transition-all">
         <div className="text-center animate-pulse">
-           <div className="w-16 h-16 bg-slate-200 rounded-2xl mx-auto mb-6"></div>
+           <div className="w-16 h-16 bg-brand-indigo/10 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+             <div className="w-8 h-8 rounded-full border-4 border-brand-indigo/30 border-t-brand-indigo animate-spin"></div>
+           </div>
            <div className="h-6 bg-slate-200 rounded-full w-48 mx-auto mb-4"></div>
            <div className="h-4 bg-slate-200 rounded-full w-32 mx-auto"></div>
         </div>
@@ -97,20 +98,20 @@ function DashboardContentComponent() {
     <div className="min-h-screen bg-slate-50 selection:bg-indigo-100 pb-24 relative">
       <Navbar />
       
-      {/* Score Entry Modal */}
+      {/* Dynamic Overlay: Score Entry Modal */}
       {showScoreModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm shadow-2xl">
-          <div className="relative w-full max-w-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm shadow-2xl animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg animate-in zoom-in-95 duration-200">
             <button 
               onClick={() => setShowScoreModal(false)}
-              className="absolute -top-4 -right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full text-slate-500 hover:text-slate-900 shadow-md z-10"
+              className="absolute -top-4 -right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full text-slate-500 hover:text-slate-900 shadow-md z-10 transition-transform hover:scale-110"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <ScoreEntry 
               onScoreAdded={() => {
                 setShowScoreModal(false);
-                syncData();
+                syncData(); // Instantly fetch new data to update scores display automatically
               }} 
             />
           </div>
@@ -118,7 +119,8 @@ function DashboardContentComponent() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
-        {/* Success Banner */}
+        
+        {/* Stripe Redirect Success Banner */}
         {showSuccessBanner && (
           <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
             <Card variant="dark" className="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 border-indigo-500/30 overflow-hidden relative group">
@@ -143,25 +145,25 @@ function DashboardContentComponent() {
           </div>
         )}
 
-        {/* Charity Selector for First Visit */}
+        {/* Charity Selector Enforcement (Interrupts UX if missing) */}
         {!hasSelectedCharity ? (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
              <CharitySelector onComplete={syncData} />
           </div>
         ) : (
-          <>
+          <div className="animate-in fade-in duration-700">
             <div className="flex flex-col lg:flex-row justify-between items-end mb-12 gap-6">
               <div>
-                <Badge variant="indigo" className="mb-4">Live Dashboard</Badge>
-                <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase">
+                <Badge variant="indigo" className="mb-4 shadow-sm">Live Dashboard</Badge>
+                <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase drop-shadow-sm">
                   Player <span className="text-brand-indigo">Terminal</span>
                 </h1>
               </div>
               <div className="flex gap-3">
                  <Button variant="outline" size="sm" onClick={syncData} disabled={syncing}>
-                   {syncing ? 'Syncing...' : 'Sync Actions'}
+                   {syncing ? 'Syncing...' : 'Sync Action'}
                  </Button>
-                 <Button variant="primary" size="sm" onClick={() => setShowScoreModal(true)}>
+                 <Button variant="primary" size="sm" onClick={() => setShowScoreModal(true)} className="shadow-lg shadow-brand-indigo/30 hover:scale-105 transition-transform">
                    New Entry
                  </Button>
               </div>
@@ -178,6 +180,7 @@ function DashboardContentComponent() {
               </div>
             )}
 
+            {/* Core Dashboard UI Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                <div className="lg:col-span-2 space-y-8">
                   <DrawsCard />
@@ -192,13 +195,14 @@ function DashboardContentComponent() {
                   <CharityCard preferences={charityPrefs} onConfigClick={() => router.push('/dashboard/charity')} />
                </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+// Wrapper for optimal Next.js SSR boundaries and fallback behavior
 export default function DashboardContent() {
   return (
     <Suspense fallback={
