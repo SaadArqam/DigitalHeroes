@@ -1,16 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { addScore, getUserScores } from '@/app/actions/scores';
+import { addScore, editScore, getUserScores } from '@/app/actions/scores';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Target, Calendar, History, TrendingUp, AlertCircle } from 'lucide-react';
 
-export default function ScoreEntry({ onScoreAdded }: { onScoreAdded?: () => void }) {
-  const [score, setScore] = useState('');
-  const [date, setDate] = useState('');
+export default function ScoreEntry({ 
+  onScoreAdded, 
+  initialData,
+  onCancel
+}: { 
+  onScoreAdded?: () => void;
+  initialData?: { id: string; score: number; date: string };
+  onCancel?: () => void;
+}) {
+  const [score, setScore] = useState(initialData?.score.toString() || '');
+  const [date, setDate] = useState(initialData?.date || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [recentScores, setRecentScores] = useState<any[]>([]);
@@ -38,12 +45,16 @@ export default function ScoreEntry({ onScoreAdded }: { onScoreAdded?: () => void
     setLoading(true);
     setError('');
 
-    const result = await addScore(scoreNum, date);
+    const result = initialData 
+      ? await editScore(initialData.id, scoreNum, date)
+      : await addScore(scoreNum, date);
+
     if (result.success) {
-      toast('Performance data uploaded', 'success');
-      setScore('');
-      setDate('');
-      setRecentScores([result.data!, ...recentScores].slice(0, 5)); 
+      toast(initialData ? 'Records updated' : 'Performance data uploaded', 'success');
+      if (!initialData) {
+        setScore('');
+        setDate('');
+      }
       onScoreAdded?.(); 
     } else {
       toast(result.message, 'error');

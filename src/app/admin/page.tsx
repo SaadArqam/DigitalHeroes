@@ -226,8 +226,8 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-5 text-sm font-medium text-slate-500">{new Date(user.created_at).toLocaleDateString()}</td>
                           <td className="px-6 py-5">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${user.is_admin ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
-                              {user.is_admin ? 'Admin' : 'Citizen'}
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${user.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+                              {user.role === 'admin' ? 'Admin' : 'Citizen'}
                             </span>
                           </td>
                           <td className="px-6 py-5">

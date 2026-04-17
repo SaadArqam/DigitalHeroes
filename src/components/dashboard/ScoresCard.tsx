@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { Target, TrendingDown, Star, Calendar, ArrowRight, Activity } from 'lucide-react';
+import { Target, TrendingDown, Star, Calendar, ArrowRight, Activity, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +14,8 @@ interface Score {
 interface ScoresCardProps {
   scores: Score[];
   onAddClick: () => void;
+  onEditClick: (score: Score) => void;
+  onDeleteClick: (id: string) => void;
 }
 
 const itemVariants: Variants = {
@@ -25,7 +27,7 @@ const itemVariants: Variants = {
   })
 };
 
-export function ScoresCard({ scores, onAddClick }: ScoresCardProps) {
+export function ScoresCard({ scores, onAddClick, onEditClick, onDeleteClick }: ScoresCardProps) {
   const last5 = (scores || []).slice(0, 5);
   const best = last5.length > 0 ? Math.min(...last5.map(s => s.score)) : null;
   const average = last5.length > 0 ? Math.round(last5.reduce((a, b) => a + b.score, 0) / last5.length) : null;
@@ -47,7 +49,7 @@ export function ScoresCard({ scores, onAddClick }: ScoresCardProps) {
             onClick={onAddClick}
             variant="secondary"
             size="sm"
-            className="rounded-xl"
+            className="rounded-xl font-black"
             icon={<Plus className="w-3.5 h-3.5" />}
           >
             Entry
@@ -87,7 +89,7 @@ export function ScoresCard({ scores, onAddClick }: ScoresCardProps) {
                   variants={itemVariants}
                   initial="hidden"
                   animate="visible"
-                  className="flex items-center p-4 rounded-[1.5rem] bg-card border border-card-border hover:border-primary-start/30 transition-all duration-300"
+                  className="flex items-center p-4 rounded-[1.5rem] bg-card border border-card-border hover:border-primary-start/30 transition-all duration-300 group/item"
                 >
                   <div className="flex-1 flex items-center gap-5">
                      <div className={`
@@ -115,6 +117,22 @@ export function ScoresCard({ scores, onAddClick }: ScoresCardProps) {
                           />
                         </div>
                      </div>
+
+                     {/* Action Buttons */}
+                     <div className="flex items-center gap-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => onEditClick(score)}
+                          className="p-2 rounded-lg bg-card border border-card-border text-text-secondary hover:text-primary-end hover:border-primary-end/30 transition-all"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteClick(score.id)}
+                          className="p-2 rounded-lg bg-card border border-card-border text-text-secondary hover:text-rose-500 hover:border-rose-500/30 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                     </div>
                   </div>
                 </motion.div>
               ))
@@ -128,8 +146,4 @@ export function ScoresCard({ scores, onAddClick }: ScoresCardProps) {
         </div>
     </Card>
   );
-}
-
-function Plus({ className }: { className?: string }) {
-  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
 }

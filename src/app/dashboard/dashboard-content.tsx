@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getUserSubscription } from '@/app/actions/subscriptions';
-import { getUserScores } from '@/app/actions/scores';
+import { getUserScores, deleteScore } from '@/app/actions/scores';
 import { getUserCharityPreferences } from '@/app/actions/charities';
 import { getWinnerDrawResults } from '@/app/actions/winners';
 import { useToast } from '@/hooks/use-toast';
@@ -29,8 +29,9 @@ function DashboardContentComponent() {
 
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
-  const [showScoreModal, setShowScoreModal] = useState(false);
+   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+   const [showScoreModal, setShowScoreModal] = useState(false);
+   const [editingScore, setEditingScore] = useState<any>(null);
 
   const [subscription, setSubscription] = useState<any>(null);
   const [scores, setScores] = useState<any[]>([]);
@@ -74,6 +75,23 @@ function DashboardContentComponent() {
       toast('Sync Failed', 'error');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleEditScore = (score: any) => {
+    setEditingScore(score);
+    setShowScoreModal(true);
+  };
+
+  const handleDeleteScore = async (id: string) => {
+    if (confirm('Are you sure you want to delete this score record?')) {
+      const res = await deleteScore(id);
+      if (res.success) {
+        toast('Record deleted', 'success');
+        syncData();
+      } else {
+        toast(res.message, 'error');
+      }
     }
   };
 
@@ -193,7 +211,12 @@ function DashboardContentComponent() {
                <div className="lg:col-span-8 space-y-8">
                   <DrawsCard latestDraw={drawResults[0]?.draws} userResult={drawResults[0]} />
                   <div className="grid md:grid-cols-2 gap-8">
-                     <ScoresCard scores={scores} onAddClick={() => setShowScoreModal(true)} />
+                     <ScoresCard 
+                       scores={scores} 
+                       onAddClick={() => { setEditingScore(null); setShowScoreModal(true); }} 
+                       onEditClick={handleEditScore}
+                       onDeleteClick={handleDeleteScore}
+                     />
                      <WinningsCard results={drawResults} />
                   </div>
                </div>
@@ -212,10 +235,13 @@ function DashboardContentComponent() {
 
       <Modal 
         isOpen={showScoreModal} 
-        onClose={() => setShowScoreModal(false)}
-        title="Record Score"
+        onClose={() => { setShowScoreModal(false); setEditingScore(null); }}
+        title={editingScore ? "Edit Record" : "Record Score"}
       >
-        <ScoreEntry onScoreAdded={() => { setShowScoreModal(false); syncData(); }} />
+        <ScoreEntry 
+          initialData={editingScore}
+          onScoreAdded={() => { setShowScoreModal(false); setEditingScore(null); syncData(); }} 
+        />
       </Modal>
     </PageContainer>
   );

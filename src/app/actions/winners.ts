@@ -141,11 +141,11 @@ export async function getAllWinnersForAdmin() {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile?.is_admin) {
+    if (profileError || profile?.role !== 'admin') {
       return {
         success: false,
         message: 'Unauthorized'
@@ -156,7 +156,7 @@ export async function getAllWinnersForAdmin() {
       .from('draw_results')
       .select(`
         *,
-        users:user_id(email)
+        profiles:user_id(email)
       `);
 
     if (error) {
@@ -168,7 +168,7 @@ export async function getAllWinnersForAdmin() {
 
     const formattedWinners = (winners as any[]).map(winner => ({
       ...winner,
-      user_email: winner.users?.email
+      user_email: winner.profiles?.email
     }));
 
     return {
@@ -204,11 +204,11 @@ export async function approveWinner(winnerId: string) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile?.is_admin) {
+    if (profileError || profile?.role !== 'admin') {
       return {
         success: false,
         message: 'Unauthorized'
@@ -292,11 +292,11 @@ export async function rejectWinner(winnerId: string) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile?.is_admin) {
+    if (profileError || profile?.role !== 'admin') {
       return {
         success: false,
         message: 'Unauthorized'

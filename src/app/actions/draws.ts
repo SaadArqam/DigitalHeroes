@@ -23,11 +23,11 @@ export async function runDraw() {
 
     const { data: profile } = await supabaseSession
       .from('profiles')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (!profile?.is_admin) return { success: false, message: 'Unauthorized. Admin privileges required.' };
+    if (!profile || profile.role !== 'admin') return { success: false, message: 'Unauthorized. Admin privileges required.' };
 
     const adminSupabase = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

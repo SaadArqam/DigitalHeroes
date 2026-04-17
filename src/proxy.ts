@@ -52,11 +52,11 @@ export async function proxy(request: NextRequest) {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (!isAdminEmail && (!profile || !profile.is_admin)) {
+    if (!isAdminEmail && (!profile || profile.role !== 'admin')) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
