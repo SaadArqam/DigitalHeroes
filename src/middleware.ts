@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -22,48 +22,32 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    console.log(`MIDDLEWARE: No user found. Redirecting ${request.nextUrl.pathname} to /login`);
+  // 1. Unauthenticated users seeking protected routes
+  if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/admin'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (!user && request.nextUrl.pathname.startsWith('/admin')) {
-    console.log(`MIDDLEWARE: No user found. Redirecting ${request.nextUrl.pathname} to /login`);
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
+  // 2. Dashboard Protection: Subscription Check
   if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
     // Bypass subscription check if returning from a successful checkout session
-    // to avoid race conditions with the webhook processing.
     if (request.nextUrl.searchParams.get('success') === 'true') {
-      console.log(`MIDDLEWARE: Bypassing subscription check due to ?success=true for user ${user.id}`);
       return supabaseResponse;
     }
 
-    const { data: subscription, error: subError } = await supabase
+    const { data: subscription } = await supabase
       .from('subscriptions')
-      .select('*')
+      .select('status')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .maybeSingle();
 
-    console.log("Subscription check:", subscription);
-
-    if (subError) {
-      console.error(`MIDDLEWARE: Error checking subscription for user ${user.id}. Error:`, subError);
-      return NextResponse.redirect(new URL('/subscribe', request.url));
-    }
-
     if (!subscription) {
-      console.log(`MIDDLEWARE: Missing or inactive subscription for user ${user.id}. Redirecting to /subscribe.`);
       return NextResponse.redirect(new URL('/subscribe', request.url));
-    } else {
-      console.log(`MIDDLEWARE: Active subscription found for user ${user.id}. Allowing /dashboard access.`);
     }
   }
 
+  // 3. Admin Protection: Role Check (is_admin OR email)
   if (user && request.nextUrl.pathname.startsWith('/admin')) {
-    // Admin check: email OR is_admin flag
     const isAdminEmail = user.email === 'admin@gmail.com' || user.email === 'your@email.com';
 
     const { data: profile, error } = await supabase
@@ -72,25 +56,24 @@ export async function proxy(request: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (error) {
-      console.error(`MIDDLEWARE: Error checking admin status for user ${user.id}. Error:`, error);
-      // Fallback to email check if DB fails
-      if (!isAdminEmail) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
-    }
-
     if (!isAdminEmail && (!profile || !profile.is_admin)) {
-      console.log(`MIDDLEWARE: Non-admin user ${user.id} (${user.email}) attempting to access /admin. Redirecting to /dashboard.`);
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
-    
-    console.log(`MIDDLEWARE: Admin access granted for ${user.email}`);
   }
 
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (images, etc)
+     */
+    '/dashboard/:path*',
+    '/admin/:path*',
+  ],
 }
