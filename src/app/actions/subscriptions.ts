@@ -22,409 +22,120 @@ const STATUS_MAP: Record<string, 'active' | 'lapsed' | 'cancelled'> = {
   cancelled: 'cancelled'
 };
 
-function createSupabaseAdminClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    }
-  );
-}
-
-// Use centralized pricing configuration for Stripe price IDs
 const STRIPE_PRICE_IDS = {
   monthly: monthlyPlan.stripePriceId,
   yearly: yearlyPlan.stripePriceId,
 } as const;
 
 export async function createCheckoutSession(plan: 'monthly' | 'yearly'): Promise<CheckoutSessionResponse> {
-
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
-console.log("🔥 BASE URL:", baseUrl);
   try {
-    // Validate input
     const validatedPlan = PlanSchema.parse(plan);
-
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      return {
-        success: false,
-        message: 'You must be logged in to subscribe'
-      };
-    }
+    if (!user) return { success: false, message: 'Auth required' };
 
-    // Check if user already has an active subscription
-    const { data: existingSubscription, error: subError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
-
-    if (existingSubscription) {
-      return {
-        success: false,
-        message: 'You already have an active subscription'
-      };
-    }
-
-    // Get or create Stripe customer
-    let customerId = existingSubscription?.stripe_customer_id;
+    const { data: currentSub } = await supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle();
+    let customerId = currentSub?.stripe_customer_id;
 
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email || undefined,
-        metadata: {
-          supabase_user_id: user.id,
-        },
+        metadata: { supabase_user_id: user.id },
       });
       customerId = customer.id;
     }
 
-    // Get the price ID for the selected plan
-    const priceId = STRIPE_PRICE_IDS[validatedPlan];
-    if (!priceId) {
-      return {
-        success: false,
-        message: 'Invalid plan selected'
-      };
-    }
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    const successUrl = `${baseUrl}/dashboard?success=true`;
-    const cancelUrl = `${baseUrl}/subscribe?canceled=true`;
-
-    console.log("CHECKOUT SESSION CREATED FROM SERVER ACTION");
-    console.log("BASE URL:", baseUrl);
-    console.log("SUCCESS URL:", successUrl);
-    console.log("Creating checkout session for user:", user.id);
-    console.log("With plan:", validatedPlan);
-
-    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       mode: 'subscription',
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        supabase_user_id: user.id,
-        plan: validatedPlan,
-      },
+      line_items: [{ price: STRIPE_PRICE_IDS[validatedPlan], quantity: 1 }],
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/subscribe?canceled=true`,
+      metadata: { supabase_user_id: user.id, plan: validatedPlan },
       allow_promotion_codes: true,
-      billing_address_collection: 'auto',
-      customer_update: {
-        address: 'auto',
-        name: 'auto',
-      },
     });
 
-    return {
-      success: true,
-      message: 'Checkout session created successfully',
-      sessionId: session.id,
-      url: session.url || undefined,
-    };
-
-  } catch (error) {
-    console.error('Error creating checkout session:', error);
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred while creating checkout session'
-    };
+    return { success: true, message: 'Success', url: session.url || undefined };
+  } catch (error: any) {
+    console.error('[STRIPE_CHECKOUT_ERROR]', error);
+    return { success: false, message: error.message };
   }
 }
 
 export async function getUserSubscription(): Promise<{ success: boolean; message: string; data?: any }> {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Auth required' };
 
-    if (authError || !user) {
-      return {
-        success: false,
-        message: 'You must be logged in to view subscription'
-      };
-    }
-
-    const { data: subscription, error: fetchError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found"
-      return {
-        success: false,
-        message: 'Error fetching subscription'
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Subscription fetched successfully',
-      data: subscription
-    };
-
-  } catch (error) {
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred'
-    };
-  }
-}
-
-export async function cancelSubscription(): Promise<{ success: boolean; message: string }> {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return {
-        success: false,
-        message: 'You must be logged in to cancel subscription'
-      };
-    }
-
-    // Get user's subscription
-    const { data: subscription, error: fetchError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
-
-    if (fetchError || !subscription) {
-      return {
-        success: false,
-        message: 'No active subscription found'
-      };
-    }
-
-    // Cancel subscription in Stripe
-    const canceledSubscription = await stripe.subscriptions.cancel(subscription.stripe_subscription_id);
-
-    // Update subscription in database
-    const { error: updateError } = await supabase
-      .from('subscriptions')
-      .update({
-        status: 'canceled',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', subscription.id);
-
-    if (updateError) {
-      return {
-        success: false,
-        message: 'Error updating subscription in database'
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Subscription canceled successfully'
-    };
-
-  } catch (error) {
-    console.error('Error canceling subscription:', error);
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred while canceling subscription'
-    };
+    const { data: subscription, error } = await supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle();
+    if (error) throw error;
+    return { success: true, message: 'Fetched', data: subscription };
+  } catch (error: any) {
+    return { success: false, message: error.message };
   }
 }
 
 export async function syncStripeSubscription(): Promise<{ success: boolean; message: string; data?: Subscription }> {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Auth required' };
 
-    if (authError || !user) {
-      return {
-        success: false,
-        message: 'You must be logged in'
-      };
-    }
+    const adminSupabase = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { data: subRec } = await adminSupabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle();
 
-    const { data: subscription, error: subError } = await supabase
+    if (!subRec?.stripe_customer_id) return { success: false, message: 'No Stripe history found' };
+
+    const subs = await stripe.subscriptions.list({ customer: subRec.stripe_customer_id, limit: 1 });
+    if (subs.data.length === 0) return { success: false, message: 'No active Stripe subscription' };
+
+    const s = subs.data[0] as any;
+    
+    // PRODUCTION FIX: Reliable date conversion. Stripe uses SECONDS.
+    const periodEnd = s.current_period_end ? new Date(s.current_period_end * 1000).toISOString() : new Date().toISOString();
+
+    const normalizedStatus = STATUS_MAP[s.status] || 'lapsed';
+    
+    const { data: updated, error: upsertError } = await adminSupabase
       .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
+      .upsert({
+        user_id: user.id,
+        status: normalizedStatus,
+        stripe_customer_id: s.customer as string,
+        stripe_subscription_id: s.id,
+        current_period_end: periodEnd,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' })
+      .select()
       .single();
 
-    if (subscription && subscription.status === 'active') {
-      return {
-        success: true,
-        message: 'Subscription already active',
-        data: subscription
-      };
-    }
-
-    const adminSupabase = createSupabaseAdminClient();
-    const { data: customer } = await adminSupabase
-      .from('subscriptions')
-      .select('stripe_customer_id, stripe_subscription_id')
-      .eq('user_id', user.id)
-      .single();
-
-    let stripeSub: Stripe.Subscription | null = null;
-    if (customer?.stripe_subscription_id) {
-      stripeSub = await stripe.subscriptions.retrieve(customer.stripe_subscription_id);
-    } else if (customer?.stripe_customer_id) {
-      const { data: subscriptions } = await stripe.subscriptions.list({
-        customer: customer.stripe_customer_id,
-        limit: 1
-      });
-      if (subscriptions.length > 0) {
-        stripeSub = subscriptions[0];
-      }
-    }
-
-    if (!stripeSub) {
-      return {
-        success: false,
-        message: 'No active Stripe subscription found'
-      };
-    }
-
-    const priceId = stripeSub.items.data[0]?.price?.id;
-    let plan: 'monthly' | 'yearly' = 'monthly';
-    if (priceId === process.env.STRIPE_PRICE_YEARLY) plan = 'yearly';
-    else if (priceId === process.env.STRIPE_PRICE_MONTHLY) plan = 'monthly';
-
-    let baseStatus = stripeSub.status;
-    if (stripeSub.cancel_at_period_end && stripeSub.status === 'active') {
-      baseStatus = 'canceled';
-    }
-    const normalizedStatus = STATUS_MAP[baseStatus] || 'lapsed';
-
-    const subscriptionData = {
-      user_id: user.id,
-      plan,
-      status: normalizedStatus,
-      stripe_customer_id: stripeSub.customer as string,
-      stripe_subscription_id: stripeSub.id,
-      current_period_end: new Date((stripeSub as any).current_period_end * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data: existingSub, error: fetchError } = await adminSupabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    let updatedSub;
-    if (existingSub) {
-      const { data } = await adminSupabase
-        .from('subscriptions')
-        .update(subscriptionData)
-        .eq('id', existingSub.id)
-        .select()
-        .single();
-      updatedSub = data;
-    } else {
-      const { data } = await adminSupabase
-        .from('subscriptions')
-        .upsert({
-          ...subscriptionData,
-          created_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        })
-        .select()
-        .single();
-      updatedSub = data;
-    }
-
-    return {
-      success: true,
-      message: 'Subscription synced successfully',
-      data: updatedSub as Subscription
-    };
-
-  } catch (error) {
-    console.error('Error syncing subscription:', error);
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred'
-    };
+    if (upsertError) throw upsertError;
+    return { success: true, message: 'Synced', data: updated as any };
+  } catch (error: any) {
+    console.error('[SUBSCRIPTION_SYNC_ERROR]', error);
+    return { success: false, message: error.message };
   }
 }
 
 export async function createBillingPortalSession(): Promise<CheckoutSessionResponse> {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Auth required' };
 
-    if (authError || !user) {
-      return { success: false, message: 'You must be logged in' };
-    }
-
-    const adminSupabase = createSupabaseAdminClient();
-    const { data: subscription } = await adminSupabase
-      .from('subscriptions')
-      .select('stripe_customer_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!subscription?.stripe_customer_id) {
-      return { success: false, message: 'No billing account found' };
-    }
+    const { data: sub } = await supabase.from('subscriptions').select('stripe_customer_id').eq('user_id', user.id).maybeSingle();
+    if (!sub?.stripe_customer_id) return { success: false, message: 'No billing profile' };
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: subscription.stripe_customer_id,
+      customer: sub.stripe_customer_id,
       return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`,
     });
 
-    return {
-      success: true,
-      url: session.url,
-      message: 'Portal initialized successfully'
-    };
-  } catch (error) {
-    console.error('Error creating billing portal session:', error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    return { success: true, url: session.url, message: 'Portal ready' };
+  } catch (error: any) {
+    return { success: false, message: error.message };
   }
 }
