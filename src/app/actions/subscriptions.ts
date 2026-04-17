@@ -2,12 +2,37 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { PlanSchema } from '@/lib/validations';
-import { CheckoutSessionResponse } from '@/lib/types';
+import { CheckoutSessionResponse, Subscription } from '@/lib/types';
 import Stripe from 'stripe';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-03-25.dahlia',
 });
+
+const STATUS_MAP: Record<string, 'active' | 'lapsed' | 'cancelled'> = {
+  active: 'active',
+  trialing: 'active',
+  past_due: 'lapsed',
+  unpaid: 'lapsed',
+  incomplete: 'lapsed',
+  incomplete_expired: 'lapsed',
+  canceled: 'cancelled',
+  cancelled: 'cancelled'
+};
+
+function createSupabaseAdminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+}
 
 // Define your Stripe price IDs - you'll need to create these in your Stripe dashboard
 const STRIPE_PRICE_IDS = {
@@ -221,6 +246,131 @@ export async function cancelSubscription(): Promise<{ success: boolean; message:
     return {
       success: false,
       message: 'An unexpected error occurred while canceling subscription'
+    };
+  }
+}
+
+export async function syncStripeSubscription(): Promise<{ success: boolean; message: string; data?: Subscription }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return {
+        success: false,
+        message: 'You must be logged in'
+      };
+    }
+
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (subscription && subscription.status === 'active') {
+      return {
+        success: true,
+        message: 'Subscription already active',
+        data: subscription
+      };
+    }
+
+    const adminSupabase = createSupabaseAdminClient();
+    const { data: customer } = await adminSupabase
+      .from('subscriptions')
+      .select('stripe_customer_id, stripe_subscription_id')
+      .eq('user_id', user.id)
+      .single();
+
+    let stripeSub: Stripe.Subscription | null = null;
+    if (customer?.stripe_subscription_id) {
+      stripeSub = await stripe.subscriptions.retrieve(customer.stripe_subscription_id);
+    } else if (customer?.stripe_customer_id) {
+      const { data: subscriptions } = await stripe.subscriptions.list({
+        customer: customer.stripe_customer_id,
+        limit: 1
+      });
+      if (subscriptions.length > 0) {
+        stripeSub = subscriptions[0];
+      }
+    }
+
+    if (!stripeSub) {
+      return {
+        success: false,
+        message: 'No active Stripe subscription found'
+      };
+    }
+
+    const priceId = stripeSub.items.data[0]?.price?.id;
+    let plan: 'monthly' | 'yearly' = 'monthly';
+    if (priceId === process.env.STRIPE_PRICE_YEARLY) plan = 'yearly';
+    else if (priceId === process.env.STRIPE_PRICE_MONTHLY) plan = 'monthly';
+
+    let baseStatus = stripeSub.status;
+    if (stripeSub.cancel_at_period_end && stripeSub.status === 'active') {
+      baseStatus = 'canceled';
+    }
+    const normalizedStatus = STATUS_MAP[baseStatus] || 'lapsed';
+
+    const subscriptionData = {
+      user_id: user.id,
+      plan,
+      status: normalizedStatus,
+      stripe_customer_id: stripeSub.customer as string,
+      stripe_subscription_id: stripeSub.id,
+      current_period_end: new Date((stripeSub as any).current_period_end * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: existingSub, error: fetchError } = await adminSupabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    let updatedSub;
+    if (existingSub) {
+      const { data } = await adminSupabase
+        .from('subscriptions')
+        .update(subscriptionData)
+        .eq('id', existingSub.id)
+        .select()
+        .single();
+      updatedSub = data;
+    } else {
+      const { data } = await adminSupabase
+        .from('subscriptions')
+        .upsert({
+          ...subscriptionData,
+          created_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
+      updatedSub = data;
+    }
+
+    return {
+      success: true,
+      message: 'Subscription synced successfully',
+      data: updatedSub as Subscription
+    };
+
+  } catch (error) {
+    console.error('Error syncing subscription:', error);
+    if (error instanceof Error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+    return {
+      success: false,
+      message: 'An unexpected error occurred'
     };
   }
 }

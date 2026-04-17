@@ -83,7 +83,6 @@ export async function POST(req: Request) {
       console.log(`Event ${eventId} already processed`);
       return NextResponse.json({ received: true });
     }
-    await markEventProcessed(eventId, supabase);
 
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -121,6 +120,8 @@ export async function POST(req: Request) {
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
+
+    await markEventProcessed(eventId, supabase);
 
     return NextResponse.json({ received: true });
   } catch (error) {
