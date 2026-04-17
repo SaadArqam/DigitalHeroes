@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getAllWinnersForAdmin, approveWinner, rejectWinner } from '@/app/actions/winners';
 import { AdminWinner } from '@/lib/types';
+import { formatPrice } from '@/lib/pricing';
 
 interface AdminWinnersProps {
   className?: string;
@@ -209,7 +210,7 @@ export default function AdminWinners({ className = '' }: AdminWinnersProps) {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ₹{winner.prize_amount.toLocaleString()}
+                  {formatPrice(winner.prize_amount * 100)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(winner.status)}`}>

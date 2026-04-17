@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getUserSubscription } from '@/app/actions/subscriptions';
 import { Subscription } from '@/lib/types';
+import { getPlanPrice, formatPrice } from '@/lib/pricing';
 
 interface SubscriptionStatusProps {
   className?: string;
@@ -89,7 +90,7 @@ export default function SubscriptionStatus({ className = '' }: SubscriptionStatu
                 {subscription.plan}
               </span>
               <span className="text-gray-600">
-                (₹{subscription.plan === 'monthly' ? '499' : '4,999'}/{subscription.plan === 'monthly' ? 'month' : 'year'})
+                ({formatPrice(getPlanPrice(subscription.plan)?.amount || 0)}/{subscription.plan === 'monthly' ? 'month' : 'year'})
               </span>
             </div>
             

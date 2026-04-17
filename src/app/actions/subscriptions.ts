@@ -5,6 +5,7 @@ import { PlanSchema } from '@/lib/validations';
 import { CheckoutSessionResponse, Subscription } from '@/lib/types';
 import Stripe from 'stripe';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { monthlyPlan, yearlyPlan } from '@/lib/pricing';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-03-25.dahlia',
@@ -34,10 +35,10 @@ function createSupabaseAdminClient() {
   );
 }
 
-// Define your Stripe price IDs - you'll need to create these in your Stripe dashboard
+// Use centralized pricing configuration for Stripe price IDs
 const STRIPE_PRICE_IDS = {
-  monthly: process.env.STRIPE_PRICE_MONTHLY!,
-  yearly: process.env.STRIPE_PRICE_YEARLY!,
+  monthly: monthlyPlan.stripePriceId,
+  yearly: yearlyPlan.stripePriceId,
 } as const;
 
 export async function createCheckoutSession(plan: 'monthly' | 'yearly'): Promise<CheckoutSessionResponse> {

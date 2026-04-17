@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AdminStats } from '@/lib/types';
+import { formatPrice } from '@/lib/pricing';
 
 interface AdminOverviewProps {
   className?: string;
@@ -92,7 +93,7 @@ export default function AdminOverview({ className = '' }: AdminOverviewProps) {
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-600 mb-2">₹{stats.totalPrizePool.toLocaleString()}</div>
+                <div className="text-3xl font-bold text-yellow-600 mb-2">{formatPrice(stats.totalPrizePool * 100)}</div>
                 <div className="text-gray-600">Total Prize Pool</div>
               </div>
             </div>
@@ -113,7 +114,7 @@ export default function AdminOverview({ className = '' }: AdminOverviewProps) {
               {stats.charityTotals.map((charity) => (
                 <div key={charity.charity_id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <h5 className="font-medium text-gray-800 mb-2">{charity.charity_name}</h5>
-                  <div className="text-2xl font-bold text-gray-900">₹{charity.total_contributions.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-gray-900">{formatPrice(charity.total_contributions * 100)}</div>
                   <div className="text-sm text-gray-600">Total Contributions</div>
                 </div>
               ))}

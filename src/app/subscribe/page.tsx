@@ -3,39 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createCheckoutSession, getUserSubscription } from '@/app/actions/subscriptions';
-import { SubscriptionPlan } from '@/lib/types';
-
-const plans: SubscriptionPlan[] = [
-  {
-    id: 'monthly',
-    name: 'Monthly Plan',
-    price: 499,
-    interval: 'month',
-    stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || '',
-    features: [
-      'Access to all golf scoring features',
-      'Monthly score tracking and analytics',
-      'Participation in weekly draws',
-      'Basic charity contribution features',
-      'Email support'
-    ]
-  },
-  {
-    id: 'yearly',
-    name: 'Yearly Plan',
-    price: 4999,
-    interval: 'year',
-    stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY || '',
-    features: [
-      'All Monthly Plan features',
-      'Advanced analytics and insights',
-      'Priority draw participation',
-      'Enhanced charity contribution tools',
-      'Priority email support',
-      'Save 17% compared to monthly billing'
-    ]
-  }
-];
+import { monthlyPlan, yearlyPlan, formatPrice } from '@/lib/pricing';
 
 function SubscribePageContent() {
   const router = useRouter();
@@ -168,7 +136,7 @@ function SubscribePageContent() {
 
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => (
+          {[monthlyPlan, yearlyPlan].map((plan) => (
             <div
               key={plan.id}
               className={`bg-white rounded-lg shadow-md overflow-hidden ${
@@ -177,14 +145,14 @@ function SubscribePageContent() {
             >
               {plan.id === 'yearly' && (
                 <div className="bg-blue-500 text-white text-center py-2 text-sm font-semibold">
-                  MOST POPULAR - Save 17%
+                  MOST POPULAR - Save {plan.savings}%
                 </div>
               )}
               
               <div className="p-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">₹{plan.price}</span>
+                  <span className="text-4xl font-bold text-gray-900">{formatPrice(plan.amount)}</span>
                   <span className="text-gray-600">/{plan.interval}</span>
                 </div>
                 
@@ -200,7 +168,7 @@ function SubscribePageContent() {
                 </ul>
                 
                 <button
-                  onClick={() => handleSubscribe(plan.id)}
+                  onClick={() => handleSubscribe(plan.id as 'monthly' | 'yearly')}
                   disabled={loading}
                   className={`w-full py-3 px-4 rounded-md font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
                     plan.id === 'yearly'
