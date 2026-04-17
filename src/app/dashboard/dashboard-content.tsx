@@ -7,6 +7,7 @@ import { getUserSubscription } from '@/app/actions/subscriptions';
 import { getUserScores } from '@/app/actions/scores';
 import { getUserCharityPreferences } from '@/app/actions/charities';
 import { getWinnerDrawResults } from '@/app/actions/winners';
+import { useToast } from '@/hooks/use-toast';
 
 import Navbar from '@/components/navbar';
 import { Button } from '@/components/ui/button';
@@ -76,9 +77,12 @@ function DashboardContentComponent() {
 
   const hasSelectedCharity = charityPrefs.length > 0;
 
+  const { toast } = useToast();
+
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       setShowSuccessBanner(true);
+      toast('Welcome to the elite circle!', 'success');
       window.history.replaceState({}, '', '/dashboard');
     }
     fetchAllData();
@@ -103,9 +107,12 @@ function DashboardContentComponent() {
       if (scoreRes.success) setScores(scoreRes.data || []);
       if (charityRes.success) setCharityPrefs(charityRes.data || []);
       if (drawRes.success) setDrawResults(drawRes.data || []);
+      
+      if (subscription) toast('Snapshot synchronized', 'success');
       setError('');
     } catch (err) {
       console.error('Dashboard data fetch error:', err);
+      toast('Snapshot synchronization failed', 'error');
       setError('Failed to load dashboard data. Please refresh.');
     } finally {
       setSyncing(false);
@@ -144,6 +151,29 @@ function DashboardContentComponent() {
         <div className="absolute top-40 left-1/4 w-96 h-96 bg-indigo-300/10 rounded-full blur-[120px]" />
         <div className="absolute top-80 right-1/4 w-80 h-80 bg-purple-300/10 rounded-full blur-[120px]" />
       </div>
+
+      {/* Cinematic Syncing Overlay */}
+      <AnimatePresence>
+        {syncing && !loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 text-white">
+               <div className="relative">
+                  <div className="w-5 h-5 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+                  <div className="absolute inset-0 bg-indigo-500 blur-md opacity-20 animate-pulse" />
+               </div>
+               <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-1">Ledger Sync</span>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none">Accessing primary network...</span>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Navbar />
 

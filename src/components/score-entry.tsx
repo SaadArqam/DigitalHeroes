@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { addScore, getUserScores } from '@/app/actions/scores';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ScoreEntry({ onScoreAdded }: { onScoreAdded?: () => void }) {
   const [score, setScore] = useState('');
@@ -15,16 +16,19 @@ export default function ScoreEntry({ onScoreAdded }: { onScoreAdded?: () => void
     fetchRecentScores();
   }, []);
 
+  const { toast } = useToast();
+
   const fetchRecentScores = async () => {
     const result = await getUserScores();
     if (result.success) setRecentScores(result.data || []);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // <-- Prevents page refresh
+    e.preventDefault(); 
     
     const scoreNum = parseInt(score);
     if (isNaN(scoreNum) || scoreNum < 1 || scoreNum > 45) {
+      toast('Invalid score (must be 1-45)', 'error');
       setError('Score must be between 1 and 45.');
       return;
     }
@@ -34,11 +38,13 @@ export default function ScoreEntry({ onScoreAdded }: { onScoreAdded?: () => void
 
     const result = await addScore(scoreNum, date);
     if (result.success) {
+      toast('Performance data uploaded', 'success');
       setScore('');
       setDate('');
-      setRecentScores([result.data!, ...recentScores].slice(0, 5)); // Instant optimistic UI update
+      setRecentScores([result.data!, ...recentScores].slice(0, 5)); 
       onScoreAdded?.(); 
     } else {
+      toast(result.message, 'error');
       setError(result.message);
     }
     

@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getCharities, saveCharityPreference } from '@/app/actions/charities';
+import { useToast } from '@/hooks/use-toast';
 import { Charity } from '@/lib/types';
 
 interface CharitySelectorProps {
@@ -18,6 +19,8 @@ export function CharitySelector({ onComplete }: CharitySelectorProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const { toast } = useToast();
+
   useEffect(() => {
     fetchCharities();
   }, []);
@@ -29,6 +32,7 @@ export function CharitySelector({ onComplete }: CharitySelectorProps) {
         setCharities(res.data || []);
       }
     } catch (err) {
+      toast('Failed to load partners', 'error');
       setError('Failed to load charities');
     } finally {
       setLoading(false);
@@ -39,15 +43,16 @@ export function CharitySelector({ onComplete }: CharitySelectorProps) {
     if (!selectedId) return;
     setSaving(true);
     try {
-      // Logic requirement: contribution info "10% of your subscription goes here"
-      // We'll save a default of 10% as requested by the flow
       const res = await saveCharityPreference(selectedId, 10);
       if (res.success) {
+        toast('Impact partner locked', 'success');
         onComplete();
       } else {
+        toast(res.message, 'error');
         setError(res.message);
       }
     } catch (err) {
+      toast('Failed to save selection', 'error');
       setError('Failed to save selection');
     } finally {
       setSaving(false);
