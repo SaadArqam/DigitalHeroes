@@ -42,6 +42,10 @@ const STRIPE_PRICE_IDS = {
 } as const;
 
 export async function createCheckoutSession(plan: 'monthly' | 'yearly'): Promise<CheckoutSessionResponse> {
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+console.log("🔥 BASE URL:", baseUrl);
   try {
     // Validate input
     const validatedPlan = PlanSchema.parse(plan);
@@ -93,6 +97,14 @@ export async function createCheckoutSession(plan: 'monthly' | 'yearly'): Promise
       };
     }
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    const successUrl = `${baseUrl}/dashboard?success=true`;
+    const cancelUrl = `${baseUrl}/subscribe?canceled=true`;
+
+    console.log("CHECKOUT SESSION CREATED FROM SERVER ACTION");
+    console.log("BASE URL:", baseUrl);
+    console.log("SUCCESS URL:", successUrl);
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -104,8 +116,8 @@ export async function createCheckoutSession(plan: 'monthly' | 'yearly'): Promise
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true`,
-cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/subscribe?canceled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         supabase_user_id: user.id,
         plan: validatedPlan,

@@ -31,6 +31,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    // Bypass subscription check if returning from a successful checkout session
+    // to avoid race conditions with the webhook processing.
+    if (request.nextUrl.searchParams.get('success') === 'true') {
+      return supabaseResponse;
+    }
+
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
       .select('status')
