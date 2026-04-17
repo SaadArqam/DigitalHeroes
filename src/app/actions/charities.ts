@@ -171,7 +171,7 @@ export async function saveCharityPreference(
       .from('subscriptions')
       .select('status')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (subError || subscription?.status !== 'active') {
       console.error(`Charity save failed: No active subscription for user ${user.id}`);
@@ -204,20 +204,22 @@ export async function saveCharityPreference(
       };
     }
 
-    // Upsert preference
     const { error: upsertError } = await adminSupabase
       .from('user_charity_preferences')
-      .upsert({
-        user_id: user.id,
-        charity_id: validatedData.charity_id,
-        contribution_percentage: validatedData.contribution_percentage,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,charity_id'
-      });
+      .upsert(
+        {
+          user_id: user.id,
+          charity_id: validatedData.charity_id,
+          contribution_percentage: validatedData.contribution_percentage,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id', // UNIQUE constraint on user_id — one row per user
+        }
+      );
 
     if (upsertError) {
-      console.error("Charity save failed: DB upsert error", upsertError);
+      console.error('Charity save failed: DB upsert error', upsertError);
       return {
         success: false,
         message: `Error saving charity preference: ${upsertError.message}`

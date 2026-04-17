@@ -361,7 +361,7 @@ export async function syncStripeSubscription(): Promise<{ success: boolean; mess
           ...subscriptionData,
           created_at: new Date().toISOString(),
         }, {
-          onConflict: 'user_charity_preferences_user_id_key',
+          onConflict: 'user_id',
           ignoreDuplicates: false
         })
         .select()
