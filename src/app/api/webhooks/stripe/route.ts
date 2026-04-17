@@ -38,11 +38,15 @@ const STATUS_MAP: Record<string, 'active' | 'lapsed' | 'cancelled'> = {
 };
 
 async function isEventProcessed(eventId: string, supabase: any): Promise<boolean> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('webhook_events')
     .select('id')
     .eq('stripe_event_id', eventId)
-    .single();
+    .maybeSingle();
+  if (error) {
+    console.warn('isEventProcessed query error (non-fatal):', error.message);
+    return false;
+  }
   return !!data;
 }
 
