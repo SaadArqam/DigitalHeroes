@@ -2,15 +2,14 @@ import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
+// ---------- CONFIG ----------
+
 function createSupabaseAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
+      auth: { autoRefreshToken: false, persistSession: false }
     }
   );
 }
@@ -24,7 +23,8 @@ function getStripe() {
   });
 }
 
-const safeDate = (ts?: number | null) => ts ? new Date(ts * 1000).toISOString() : null;
+const safeDate = (ts?: number | null) =>
+  ts ? new Date(ts * 1000).toISOString() : null;
 
 const STATUS_MAP: Record<string, 'active' | 'lapsed' | 'cancelled'> = {
   active: 'active',
@@ -37,234 +37,225 @@ const STATUS_MAP: Record<string, 'active' | 'lapsed' | 'cancelled'> = {
   cancelled: 'cancelled'
 };
 
-async function isEventProcessed(eventId: string, supabase: any): Promise<boolean> {
+// ---------- IDEMPOTENCY ----------
+
+async function isEventProcessed(eventId: string, supabase: any) {
   const { data, error } = await supabase
     .from('webhook_events')
     .select('id')
     .eq('stripe_event_id', eventId)
     .maybeSingle();
+
   if (error) {
-    console.warn('isEventProcessed query error (non-fatal):', error.message);
+    console.warn('isEventProcessed error:', error.message);
     return false;
   }
+
   return !!data;
 }
 
 async function markEventProcessed(eventId: string, supabase: any) {
-  await supabase
-    .from('webhook_events')
-    .insert({
-      stripe_event_id: eventId,
-      processed_at: new Date().toISOString(),
-    });
+  await supabase.from('webhook_events').insert({
+    stripe_event_id: eventId,
+    processed_at: new Date().toISOString(),
+  });
 }
 
+// ---------- MAIN HANDLER ----------
+
 export async function POST(req: Request) {
+  const body = await req.text();
+  const signature = (await headers()).get('stripe-signature')!;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
   try {
-    const body = await req.text();
-    const signature = (await headers()).get('stripe-signature')!;
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
+    // ENV VALIDATION
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      throw new Error("FATAL: NEXT_PUBLIC_SUPABASE_URL is missing");
-    }
-    
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('sb_publishable')) {
-      throw new Error("FATAL: SUPABASE_SERVICE_ROLE_KEY is missing or is accidentally set to the anon public key");
+      throw new Error("Missing SUPABASE URL");
     }
 
-    let event: Stripe.Event;
+    if (
+      !process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('sb_publishable')
+    ) {
+      throw new Error("Invalid SERVICE ROLE KEY");
+    }
+
+    if (!webhookSecret) {
+      throw new Error("Missing STRIPE_WEBHOOK_SECRET");
+    }
+
     const stripe = getStripe();
 
+    // VERIFY SIGNATURE
+    let event: Stripe.Event;
     try {
-      if (!webhookSecret) {
-        throw new Error('Webhook secret is not configured');
-      }
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
-      return new Response('Webhook signature verification failed', { status: 400 });
+      console.error('❌ Signature verification failed:', err);
+      return new Response('Invalid signature', { status: 400 });
     }
 
     const supabaseAdmin = createSupabaseAdminClient();
     const eventId = event.id;
 
-    console.log('Webhook received:', event.type);
+    console.log('🔥 Webhook received:', event.type);
 
+    // IDEMPOTENCY CHECK
     if (await isEventProcessed(eventId, supabaseAdmin)) {
-      console.log(`Event ${eventId} already processed`);
+      console.log('⚠️ Event already processed:', eventId);
       return new Response('ok', { status: 200 });
     }
 
+    // ---------- PROCESS EVENTS ----------
+
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutSessionCompleted(session, supabaseAdmin);
+        await handleCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session,
+          supabaseAdmin
+        );
         break;
       }
-      case 'invoice.paid':
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handleInvoicePaymentSucceeded(invoice, supabaseAdmin);
+
+      case 'invoice.payment_succeeded':
+      case 'invoice.paid': {
+        await handleInvoice(event.data.object as Stripe.Invoice, supabaseAdmin);
         break;
       }
+
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handleInvoicePaymentFailed(invoice, supabaseAdmin);
+        await handleInvoice(event.data.object as Stripe.Invoice, supabaseAdmin);
         break;
       }
+
       case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpsert(subscription, supabaseAdmin);
-        break;
-      }
+      case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionDeleted(subscription, supabaseAdmin);
+        await handleSubscription(
+          event.data.object as Stripe.Subscription,
+          supabaseAdmin
+        );
         break;
       }
+
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log('Unhandled event:', event.type);
     }
 
+    // MARK SUCCESS ONLY AFTER PROCESSING
     await markEventProcessed(eventId, supabaseAdmin);
+
     return new Response('ok', { status: 200 });
+
   } catch (error) {
-    console.error('WEBHOOK ERROR:', error);
-    return new Response('ok', { status: 200 });
+    console.error('❌ WEBHOOK FAILURE:', error);
+
+    // IMPORTANT: let Stripe retry
+    return new Response('Webhook failed', { status: 500 });
   }
 }
+
+// ---------- HANDLERS ----------
 
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
   supabaseAdmin: any
 ) {
   console.log('Session metadata:', session.metadata);
-  console.log("Subscription ID:", session.subscription);
 
-  const { supabase_user_id, plan } = session.metadata || {};
+  const userId = session.metadata?.supabase_user_id;
+  const plan = session.metadata?.plan;
 
-  if (!supabase_user_id) {
-    throw new Error('Missing supabase_user_id in metadata — cannot process subscription');
+  if (!userId) {
+    console.error('Missing user_id in metadata');
+    return;
   }
 
-  if (!plan) {
-    throw new Error('Missing plan in metadata — cannot process subscription');
-  }
-
-  const subscriptionId = session.subscription as string | null;
+  const subscriptionId = session.subscription as string;
   if (!subscriptionId) {
-    throw new Error('FATAL: No subscription ID on checkout session. Session mode must be "subscription".');
+    console.error('Missing subscription ID');
+    return;
   }
-
-  console.log('User ID:', supabase_user_id);
 
   const stripe = getStripe();
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-  console.log(`Subscription ${subscriptionId} retrieved from Stripe, status: ${subscription.status}`);
-
-  const customerId = session.customer as string;
-  try {
-    await stripe.customers.update(customerId, {
-      metadata: { supabase_user_id },
-    });
-  } catch (err) {
-    console.warn('Could not update Stripe customer metadata (non-fatal):', err);
-  }
-
-  await handleSubscriptionUpsert(subscription, supabaseAdmin, supabase_user_id);
+  await handleSubscription(subscription, supabaseAdmin, userId, plan);
 }
 
-async function handleInvoicePaymentSucceeded(
+async function handleInvoice(
   invoice: Stripe.Invoice,
   supabaseAdmin: any
 ) {
-  if ((invoice as any).subscription) {
-    const stripe = getStripe();
-    const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription.toString());
-    await handleSubscriptionUpsert(subscription, supabaseAdmin);
-  }
+  if (!(invoice as any).subscription) return;
+
+  const stripe = getStripe();
+  const subscription = await stripe.subscriptions.retrieve(
+    (invoice as any).subscription.toString()
+  );
+
+  await handleSubscription(subscription, supabaseAdmin);
 }
 
-async function handleInvoicePaymentFailed(
-  invoice: Stripe.Invoice,
-  supabaseAdmin: any
-) {
-  if ((invoice as any).subscription) {
-    const stripe = getStripe();
-    const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription.toString());
-    await handleSubscriptionUpsert(subscription, supabaseAdmin);
-  }
-}
-
-async function handleSubscriptionUpsert(
+async function handleSubscription(
   subscription: Stripe.Subscription,
   supabaseAdmin: any,
-  supabaseUserIdOverride?: string
+  overrideUserId?: string,
+  overridePlan?: string
 ) {
-  const customerId = subscription.customer as string;
-  let supabaseUserId = supabaseUserIdOverride;
+  const stripe = getStripe();
 
-  if (!supabaseUserId) {
-    const stripe = getStripe();
-    const customer = await stripe.customers.retrieve(customerId);
-    console.log("Customer metadata:", (customer as Stripe.Customer).metadata);
-    supabaseUserId = (customer as Stripe.Customer).metadata?.supabase_user_id;
+  let userId = overrideUserId;
+
+  if (!userId) {
+    const customer = await stripe.customers.retrieve(
+      subscription.customer as string
+    );
+    userId = (customer as Stripe.Customer).metadata?.supabase_user_id;
   }
 
-  if (!supabaseUserId) {
-    throw new Error('Missing supabase_user_id. Cannot save subscription to DB.');
+  if (!userId) {
+    console.error('❌ No user_id found — skipping');
+    return;
   }
-
-  console.log(`handleSubscriptionUpsert: user=${supabaseUserId}, sub=${subscription.id}, status=${subscription.status}`);
 
   const priceId = subscription.items.data[0]?.price?.id;
-  let plan: 'monthly' | 'yearly' = 'monthly';
-  
-  if (priceId === process.env.STRIPE_PRICE_YEARLY) {
-    plan = 'yearly';
-  } else if (priceId === process.env.STRIPE_PRICE_MONTHLY) {
-    plan = 'monthly';
-  }
+
+  let plan: 'monthly' | 'yearly' =
+    overridePlan === 'yearly' ||
+    priceId === process.env.STRIPE_PRICE_YEARLY
+      ? 'yearly'
+      : 'monthly';
 
   let baseStatus = subscription.status;
   if (subscription.cancel_at_period_end && subscription.status === 'active') {
     baseStatus = 'canceled';
   }
+
   const normalizedStatus = STATUS_MAP[baseStatus] || 'lapsed';
 
-  const subscriptionData = {
-    user_id: supabaseUserId,
+  const data = {
+    user_id: userId,
     plan,
     status: normalizedStatus,
-    stripe_customer_id: customerId,
+    stripe_customer_id: subscription.customer as string,
     stripe_subscription_id: subscription.id,
-    current_period_end: safeDate((subscription as any).current_period_end),
+    current_period_end: safeDate(
+      (subscription as any).current_period_end
+    ),
   };
 
-  console.log("Upserting subscription data:", subscriptionData);
+  console.log('Upserting subscription:', data);
 
-  const { error: upsertError } = await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('subscriptions')
-    .upsert(
-      subscriptionData,
-    {
-      onConflict: 'user_id'
-    });
+    .upsert(data, { onConflict: 'user_id' });
 
-  if (upsertError) {
-    console.error("WEBHOOK ERROR:", upsertError);
-    throw upsertError;
+  if (error) {
+    console.error('❌ DB UPSERT ERROR:', error);
+    throw error; // force retry
   }
 
-  console.log(`Subscription ${subscription.id} synced to database successfully for user ${supabaseUserId} with status ${normalizedStatus}.`);
-}
-
-async function handleSubscriptionDeleted(
-  subscription: Stripe.Subscription,
-  supabaseAdmin: any
-) {
-  await handleSubscriptionUpsert(subscription, supabaseAdmin);
+  console.log('✅ Subscription saved successfully');
 }
