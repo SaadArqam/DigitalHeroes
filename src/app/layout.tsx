@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navbar";
 import { ToastProvider } from "@/hooks/use-toast";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "GreenJack",
+  title: "GreenJack | Elite Performance Terminal",
   description: "Turn your golf passion into purpose - Play, compete, and support charities",
 };
 
@@ -27,12 +21,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased dark`}
+      style={{ colorScheme: 'dark' }}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full bg-background text-text-primary selection:bg-primary-start/20 selection:text-primary-end">
         <ToastProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
+          {children}
         </ToastProvider>
       </body>
     </html>

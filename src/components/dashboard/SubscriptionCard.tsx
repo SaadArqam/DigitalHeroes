@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { createBillingPortalSession } from '@/app/actions/subscriptions';
 import { Crown, ShieldCheck, CreditCard, ChevronRight, Zap, Star, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface Subscription {
   plan: string;
@@ -44,49 +46,41 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="h-full group"
-    >
-      <div className="h-full rounded-[2.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col overflow-hidden relative">
-        
+    <Card variant="glass" className="h-full group" hoverable>
         {/* Header */}
-        <div className="px-8 pt-10 pb-6 flex items-start justify-between relative z-10">
+        <div className="flex items-start justify-between relative z-10 mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-200">
+            <div className="w-12 h-12 rounded-2xl bg-card border border-card-border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
               <Crown className="w-6 h-6 text-yellow-400" />
             </div>
             <div>
-              <h3 className="font-black text-slate-900 text-xl tracking-tight">Citizen Status</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Membership Protocol</p>
+              <h3 className="font-black text-white text-xl tracking-tight leading-none mb-1">Status</h3>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">Membership Protocol</p>
             </div>
           </div>
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
-            isActive ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
+            isActive ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-input-bg text-text-muted border-input-border'
           }`}>
-            {isActive && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
-            <ShieldCheck className="w-3 h-3" /> {isActive ? 'Verified' : 'Unverified'}
+            <ShieldCheck className="w-3 h-3" /> {isActive ? 'Verified' : 'Passive'}
           </div>
         </div>
 
-        <div className="flex-1 px-8 py-6 flex flex-col relative z-10">
+        <div className="flex-1 flex flex-col relative z-10">
           {subscription ? (
             <div className="flex-1 flex flex-col">
-              <div className="p-6 rounded-[2rem] bg-slate-50 border border-slate-100 mb-8 hover:border-indigo-100 transition-all">
+              <div className="p-6 rounded-[2rem] bg-input-bg border border-input-border mb-8 group-hover:border-primary-start/30 transition-all">
                 <div className="flex justify-between items-start mb-4">
-                   <div className="p-3 rounded-xl bg-indigo-100 text-indigo-600">
+                   <div className="p-3 rounded-xl bg-card border border-card-border text-primary-end">
                       {plan === 'yearly' ? <Star className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
                    </div>
                    <div className="text-right">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Contract Tier</p>
-                      <h4 className="text-xl font-black text-slate-900 capitalize tracking-tight">{plan} Elite</h4>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Contract Tier</p>
+                      <h4 className="text-xl font-black text-white capitalize tracking-tight">{plan} Elite</h4>
                    </div>
                 </div>
                 <div className="flex items-baseline gap-2">
-                   <span className="text-3xl font-black text-slate-900 tracking-tighter">{price}</span>
-                   <span className="text-xs font-bold text-slate-400">Next Cycle</span>
+                   <span className="text-3xl font-black text-white tracking-tighter">{price}</span>
+                   <span className="text-xs font-bold text-text-muted">Active Cycle</span>
                 </div>
               </div>
 
@@ -94,54 +88,52 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
                  {[
                    'Full Draw Eligibility',
                    'Instant Result Verification',
-                   'Earth Impact Partnering'
+                   'Impact Partnering'
                  ].map((perk) => (
                    <div key={perk} className="flex items-center gap-3">
-                     <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100">
-                        <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                     <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                        <svg className="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                      </div>
-                     <span className="text-sm font-bold text-slate-600">{perk}</span>
+                     <span className="text-sm font-bold text-text-secondary">{perk}</span>
                    </div>
                  ))}
               </div>
 
-              <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center text-xs">
+              <div className="mb-8 p-4 bg-input-bg rounded-2xl border border-input-border flex justify-between items-center text-xs">
                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-slate-400" />
-                    <span className="font-black uppercase tracking-widest text-slate-500 text-[10px]">Renewal</span>
+                    <CreditCard className="w-4 h-4 text-text-muted" />
+                    <span className="font-black uppercase tracking-widest text-text-muted text-[10px]">Renewal</span>
                  </div>
-                 <span className="font-black text-slate-900">
+                 <span className="font-black text-white">
                     {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                  </span>
               </div>
 
-              <button
+              <Button
                 onClick={handleManageBilling}
-                disabled={loading}
-                className="w-full py-5 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                isLoading={loading}
+                variant="secondary"
+                className="w-full rounded-2xl"
+                icon={<ChevronRight className="w-4 h-4" />}
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Manage Citizenship <ChevronRight className="w-4 h-4" /></>}
-              </button>
+                Manage Citizenship
+              </Button>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-              <div className="w-24 h-24 rounded-[2.5rem] bg-indigo-50 border-2 border-dashed border-indigo-200 flex items-center justify-center mb-6">
-                <Crown className="w-10 h-10 text-indigo-300" />
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
+              <div className="w-20 h-20 rounded-[2rem] bg-input-bg border-2 border-dashed border-input-border flex items-center justify-center mb-6">
+                <Crown className="w-8 h-8 text-text-muted" />
               </div>
-              <h4 className="font-black text-slate-900 text-xl mb-2">Passive Citizen</h4>
-              <p className="text-slate-500 text-sm font-medium mb-8 max-w-[220px]">
+              <h4 className="font-black text-white text-xl mb-2">Passive Citizen</h4>
+              <p className="text-text-secondary text-sm font-bold mb-8 max-w-[220px]">
                 Unlock full participation and begin your progression journey.
               </p>
-              <Link
-                href="/subscribe"
-                className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center font-black uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all"
-              >
-                Activate Membership
+              <Link href="/subscribe" className="w-full">
+                <Button className="w-full rounded-2xl" size="lg">Activate Membership</Button>
               </Link>
             </div>
           )}
         </div>
-      </div>
-    </motion.div>
+    </Card>
   );
 }

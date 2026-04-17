@@ -1,50 +1,52 @@
 'use client';
 
-import * as React from 'react';
+import { ReactNode } from 'react';
+import { motion } from 'framer-motion';
 
 interface CardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
-  variant?: 'default' | 'glass' | 'dark' | 'outline';
-  hover?: boolean;
+  variant?: 'default' | 'glass' | 'outline';
+  hoverable?: boolean;
 }
 
-export function Card({ 
-  children, 
-  className = '', 
+export function Card({
+  children,
+  className = '',
   variant = 'default',
-  hover = true
+  hoverable = false,
 }: CardProps) {
-  const baseStyles = "rounded-[2.5rem] p-8 transition-all duration-300";
-  
   const variants = {
-    default: "bg-white border border-slate-100 shadow-sm",
-    glass: "bg-white/70 backdrop-blur-md border border-white/20 shadow-xl",
-    dark: "bg-slate-900 text-white border border-slate-800 shadow-2xl",
-    outline: "bg-transparent border-2 border-slate-200",
+    default: "bg-card border-card-border",
+    glass: "glass-card",
+    outline: "bg-transparent border-2 border-card-border",
   };
 
-  const hoverStyles = hover ? "hover:shadow-premium hover:-translate-y-1" : "";
-
   return (
-    <div className={`${baseStyles} ${variants[variant]} ${hoverStyles} ${className}`}>
+    <motion.div
+      whileHover={hoverable ? { y: -5, scale: 1.01 } : {}}
+      className={`
+        rounded-[2.5rem] border p-8 shadow-premium transition-all duration-300
+        ${variants[variant]} ${className}
+      `}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
-export function CardHeader({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function CardHeader({ children, className = '' }: { children: ReactNode, className?: string }) {
   return <div className={`mb-6 ${className}`}>{children}</div>;
 }
 
-export function CardTitle({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <h3 className={`text-2xl font-black uppercase tracking-tight text-slate-900 ${className}`}>{children}</h3>;
+export function CardTitle({ children, className = '' }: { children: ReactNode, className?: string }) {
+  return <h3 className={`text-2xl font-black text-white tracking-tight ${className}`}>{children}</h3>;
 }
 
-export function CardDescription({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <p className={`text-slate-500 font-medium ${className}`}>{children}</p>;
+export function CardDescription({ children, className = '' }: { children: ReactNode, className?: string }) {
+  return <p className={`text-sm font-bold text-text-secondary mt-2 ${className}`}>{children}</p>;
 }
 
-export function CardContent({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`${className}`}>{children}</div>;
+export function CardContent({ children, className = '' }: { children: ReactNode, className?: string }) {
+  return <div className={className}>{children}</div>;
 }
