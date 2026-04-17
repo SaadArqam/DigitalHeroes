@@ -33,7 +33,7 @@ export const pricingConfig: PricingConfig = {
       amount: 999, // 9.99 EUR in cents
       currency: 'eur',
       interval: 'month',
-      stripePriceId: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID || 'price_monthly_placeholder',
+      stripePriceId: process.env.STRIPE_PRICE_MONTHLY!,
       features: [
         'Unlimited score entries',
         'Monthly draws participation',
@@ -48,7 +48,7 @@ export const pricingConfig: PricingConfig = {
       amount: 9990, // 99.90 EUR in cents (2 months free)
       currency: 'eur',
       interval: 'year',
-      stripePriceId: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID || 'price_yearly_placeholder',
+      stripePriceId: process.env.STRIPE_PRICE_YEARLY!,
       savings: 17, // Save ~17% with yearly plan
       features: [
         'Everything in Monthly',
