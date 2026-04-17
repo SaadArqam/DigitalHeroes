@@ -250,7 +250,7 @@ async function handleSubscription(
 
   const { error } = await supabaseAdmin
     .from('subscriptions')
-    .upsert(data, { onConflict: 'user_id' });
+    .upsert(data, { onConflict: 'user_charity_preferences_user_id_key' });
 
   if (error) {
     console.error('❌ DB UPSERT ERROR:', error);
