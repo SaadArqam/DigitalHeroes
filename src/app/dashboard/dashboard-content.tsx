@@ -20,14 +20,19 @@ import { WinningsCard } from '@/components/dashboard/WinningsCard';
 import { DrawsCard } from '@/components/dashboard/DrawsCard';
 
 import { CharitySelector } from '@/components/dashboard/CharitySelector';
+import ScoreEntry from '@/components/score-entry';
 
 function DashboardContentComponent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string>('');
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  
+  // Modal State
+  const [showScoreModal, setShowScoreModal] = useState(false);
 
   // Real Data State
   const [subscription, setSubscription] = useState<any>(null);
@@ -48,6 +53,12 @@ function DashboardContentComponent() {
 
   const fetchAllData = async () => {
     setLoading(true);
+    await syncData();
+    setLoading(false);
+  };
+
+  const syncData = async () => {
+    setSyncing(true);
     try {
       const [subRes, scoreRes, charityRes, drawRes] = await Promise.all([
         getUserSubscription(),
@@ -64,9 +75,9 @@ function DashboardContentComponent() {
       setError('');
     } catch (err) {
       console.error('Dashboard data fetch error:', err);
-      setError('Failed to aggregate dashboard data. Please refresh.');
+      setError('Failed to aggregate dashboard data. Please try again.');
     } finally {
-      setLoading(false);
+      setSyncing(false);
     }
   };
 
@@ -83,9 +94,29 @@ function DashboardContentComponent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-indigo-100 pb-24">
+    <div className="min-h-screen bg-slate-50 selection:bg-indigo-100 pb-24 relative">
       <Navbar />
       
+      {/* Score Entry Modal */}
+      {showScoreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm shadow-2xl">
+          <div className="relative w-full max-w-lg">
+            <button 
+              onClick={() => setShowScoreModal(false)}
+              className="absolute -top-4 -right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full text-slate-500 hover:text-slate-900 shadow-md z-10"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <ScoreEntry 
+              onScoreAdded={() => {
+                setShowScoreModal(false);
+                syncData();
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
         {/* Success Banner */}
         {showSuccessBanner && (
@@ -115,7 +146,7 @@ function DashboardContentComponent() {
         {/* Charity Selector for First Visit */}
         {!hasSelectedCharity ? (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-             <CharitySelector onComplete={fetchAllData} />
+             <CharitySelector onComplete={syncData} />
           </div>
         ) : (
           <>
@@ -127,8 +158,12 @@ function DashboardContentComponent() {
                 </h1>
               </div>
               <div className="flex gap-3">
-                 <Button variant="outline" size="sm" onClick={fetchAllData}>Sync Actions</Button>
-                 <Button variant="primary" size="sm">New Entry</Button>
+                 <Button variant="outline" size="sm" onClick={syncData} disabled={syncing}>
+                   {syncing ? 'Syncing...' : 'Sync Actions'}
+                 </Button>
+                 <Button variant="primary" size="sm" onClick={() => setShowScoreModal(true)}>
+                   New Entry
+                 </Button>
               </div>
             </div>
 
@@ -147,14 +182,14 @@ function DashboardContentComponent() {
                <div className="lg:col-span-2 space-y-8">
                   <DrawsCard />
                   <div className="grid md:grid-cols-2 gap-8">
-                     <ScoresCard scores={scores} onAddClick={() => router.push('/dashboard#score-entry')} />
+                     <ScoresCard scores={scores} onAddClick={() => setShowScoreModal(true)} />
                      <WinningsCard results={drawResults} />
                   </div>
                </div>
 
                <div className="space-y-8">
                   <SubscriptionCard subscription={subscription} />
-                  <CharityCard preferences={charityPrefs} onConfigClick={() => router.push('/dashboard#charity-preference')} />
+                  <CharityCard preferences={charityPrefs} onConfigClick={() => router.push('/dashboard/charity')} />
                </div>
             </div>
           </>

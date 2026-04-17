@@ -389,3 +389,41 @@ export async function syncStripeSubscription(): Promise<{ success: boolean; mess
     };
   }
 }
+
+export async function createBillingPortalSession(): Promise<CheckoutSessionResponse> {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, message: 'You must be logged in' };
+    }
+
+    const adminSupabase = createSupabaseAdminClient();
+    const { data: subscription } = await adminSupabase
+      .from('subscriptions')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!subscription?.stripe_customer_id) {
+      return { success: false, message: 'No billing account found' };
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: subscription.stripe_customer_id,
+      return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`,
+    });
+
+    return {
+      success: true,
+      url: session.url
+    };
+  } catch (error) {
+    console.error('Error creating billing portal session:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}

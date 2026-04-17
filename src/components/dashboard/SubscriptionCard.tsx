@@ -1,17 +1,36 @@
 'use client';
 
+import { useState } from 'react';
 import { Subscription } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getPlanPrice, formatPrice } from '@/lib/pricing';
+import { createBillingPortalSession } from '@/app/actions/subscriptions';
 
 interface SubscriptionCardProps {
   subscription: Subscription | null;
 }
 
 export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
+  const [loading, setLoading] = useState(false);
   const isActive = subscription?.status === 'active';
+
+  const handleManageBilling = async () => {
+    setLoading(true);
+    try {
+      const result = await createBillingPortalSession();
+      if (result.success && result.url) {
+        window.location.href = result.url;
+      } else {
+        alert(result.message || 'Failed to open billing portal');
+      }
+    } catch (err) {
+      alert('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   return (
     <Card className="h-full flex flex-col">
@@ -46,8 +65,14 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
             </div>
 
             <div className="pt-6 mt-auto">
-              <Button variant="outline" className="w-full" size="sm">
-                Manage Billing
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                size="sm"
+                onClick={handleManageBilling}
+                disabled={loading}
+              >
+                {loading ? 'Opening Portal...' : 'Manage Billing'}
               </Button>
             </div>
           </div>
