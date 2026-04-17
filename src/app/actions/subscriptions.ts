@@ -104,6 +104,8 @@ console.log("🔥 BASE URL:", baseUrl);
     console.log("CHECKOUT SESSION CREATED FROM SERVER ACTION");
     console.log("BASE URL:", baseUrl);
     console.log("SUCCESS URL:", successUrl);
+    console.log("Creating checkout session for user:", user.id);
+    console.log("With plan:", validatedPlan);
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({

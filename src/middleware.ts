@@ -23,10 +23,12 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    console.log(`MIDDLEWARE: No user found. Redirecting ${request.nextUrl.pathname} to /login`);
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (!user && request.nextUrl.pathname.startsWith('/admin')) {
+    console.log(`MIDDLEWARE: No user found. Redirecting ${request.nextUrl.pathname} to /login`);
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -34,6 +36,7 @@ export async function middleware(request: NextRequest) {
     // Bypass subscription check if returning from a successful checkout session
     // to avoid race conditions with the webhook processing.
     if (request.nextUrl.searchParams.get('success') === 'true') {
+      console.log(`MIDDLEWARE: Bypassing subscription check due to ?success=true for user ${user.id}`);
       return supabaseResponse;
     }
 
@@ -44,7 +47,10 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (subError || subscription?.status !== 'active') {
+      console.log(`MIDDLEWARE: Missing or inactive subscription for user ${user.id}. Redirecting to /subscribe. Error:`, subError);
       return NextResponse.redirect(new URL('/subscribe', request.url));
+    } else {
+      console.log(`MIDDLEWARE: Active subscription found for user ${user.id}. Allowing /dashboard access.`);
     }
   }
 
@@ -56,6 +62,7 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (error || !profile?.is_admin) {
+      console.log(`MIDDLEWARE: Non-admin user ${user.id} attempting to access /admin. Redirecting to /dashboard.`);
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
