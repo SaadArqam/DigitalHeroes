@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getCharities, saveCharityPreference } from '@/app/actions/charities';
+import { getCharities, saveCharityPreference, getUserCharityPreferences } from '@/app/actions/charities';
 import { useToast } from '@/hooks/use-toast';
 import { Charity } from '@/lib/types';
 import { Globe, Heart, ShieldCheck, Sparkles, Loader2 } from 'lucide-react';
@@ -22,14 +22,22 @@ export function CharitySelector({ onComplete }: CharitySelectorProps) {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCharities();
+    fetchInitialData();
   }, []);
 
-  const fetchCharities = async () => {
+  const fetchInitialData = async () => {
     try {
-      const res = await getCharities();
-      if (res.success) {
-        setCharities(res.data || []);
+      const [charityRes, prefRes] = await Promise.all([
+        getCharities(),
+        getUserCharityPreferences()
+      ]);
+      
+      if (charityRes.success) {
+        setCharities(charityRes.data || []);
+      }
+      
+      if (prefRes.success && prefRes.data && prefRes.data.length > 0) {
+        setSelectedId(prefRes.data[0].charity_id);
       }
     } catch (err) {
       toast('Failed to load partners', 'error');

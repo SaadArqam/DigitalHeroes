@@ -17,48 +17,43 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert,
+  Settings
 } from 'lucide-react';
+
+import { AdminUsers } from '@/components/admin/AdminUsers';
+import { AdminCharities } from '@/components/admin/AdminCharities';
+import { AdminWinners } from '@/components/admin/AdminWinners';
 
 // --- Components ---
 
 const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
   <motion.div 
     whileHover={{ y: -5 }}
-    className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300"
+    className="bg-white p-8 rounded-[3rem] border border-slate-50 shadow-sm hover:shadow-2xl transition-all duration-500 group"
   >
-    <div className="flex justify-between items-start mb-4">
-      <div className={`p-4 rounded-2xl ${color} bg-opacity-10`}>
-        <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
+    <div className="flex justify-between items-start mb-6">
+      <div className={`p-4 rounded-2xl ${color} bg-opacity-10 group-hover:scale-110 transition-transform`}>
+        <Icon className={`w-8 h-8 ${color.replace('bg-', 'text-')}`} />
       </div>
       {trend && (
-        <span className="flex items-center text-xs font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
-          <ArrowUpRight className="w-3 h-3 mr-1" /> {trend}
+        <span className="flex items-center text-xs font-black text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl">
+          <ArrowUpRight className="w-3.5 h-3.5 mr-1" /> {trend}
         </span>
       )}
     </div>
-    <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mb-1">{title}</p>
-    <h3 className="text-3xl font-black text-slate-900 tracking-tighter">
-      {typeof value === 'number' && value >= 1000 ? `₹${value.toLocaleString()}` : value}
+    <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] mb-2">{title}</p>
+    <h3 className="text-4xl font-black text-slate-900 tracking-tighter">
+      {typeof value === 'number' && title.toLowerCase().includes('revenue') ? `₹${value.toLocaleString()}` : value}
     </h3>
   </motion.div>
 );
-
-const SectionHeader = ({ title, description, badge }: any) => (
-  <div className="mb-8">
-    {badge && <span className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">{badge}</span>}
-    <h2 className="text-3xl font-black text-slate-900 tracking-tight">{title}</h2>
-    <p className="text-slate-500 font-medium">{description}</p>
-  </div>
-);
-
-// --- Main Admin Dashboard ---
 
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('users');
   const [isDrawing, setIsDrawing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [syncing, setSyncing] = useState(false);
 
   const { toast } = useToast();
@@ -68,7 +63,6 @@ export default function AdminDashboard() {
     try {
       const res = await fetchAdminData();
       setData(res);
-      if (data) toast('System ledger synchronized', 'success');
     } catch {
       toast('Sync failed', 'error');
     } finally {
@@ -97,10 +91,10 @@ export default function AdminDashboard() {
   }
 
   if (!data) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="flex flex-col items-center">
         <RefreshCw className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Accessing Secure Data...</p>
+        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Synchronizing Core Ledger...</p>
       </div>
     </div>
   );
@@ -109,221 +103,146 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FF] text-slate-900 font-sans p-6 lg:p-12">
-      {/* Navbar / Header */}
-      <header className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+      {/* Header */}
+      <header className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
         <div>
-          <span className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-[0.2em] text-[10px] mb-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" /> Admin Terminal v2.0
-          </span>
-          <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase">Control <span className="text-indigo-600">Central</span></h1>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-900 text-white rounded-full mb-4">
+             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+             <span className="text-[9px] font-black uppercase tracking-widest">System Status: Optimal</span>
+          </div>
+          <h1 className="text-5xl lg:text-7xl font-black tracking-[-0.05em] text-slate-900 leading-[0.85]">
+            Control <span className="text-indigo-600 italic">Terminal</span>
+          </h1>
         </div>
         
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex items-center gap-4 w-full md:w-auto">
           <button 
             onClick={loadData}
             disabled={syncing}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm active:scale-95 disabled:opacity-50"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-5 bg-white border border-slate-200 rounded-[2rem] font-black text-slate-600 hover:bg-slate-50 transition shadow-sm disabled:opacity-50 text-sm uppercase tracking-widest"
           >
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-            Sync Data
+            Sync
           </button>
           
           <button 
             onClick={handleRunDraw} 
             disabled={isDrawing}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition active:scale-95 disabled:opacity-50"
+            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-10 py-5 bg-indigo-600 text-white font-black rounded-[2rem] shadow-2xl shadow-indigo-200 hover:bg-slate-900 hover:shadow-indigo-300 transition-all duration-500 disabled:opacity-50 text-sm uppercase tracking-widest group"
           >
-            <Play className="w-4 h-4" />
-            {isDrawing ? 'Executing...' : 'Run Monthly Draw'}
+            <Play className="w-4 h-4 group-hover:scale-125 transition-transform" />
+            {isDrawing ? 'Executing...' : 'Run Draw'}
           </button>
         </div>
       </header>
 
-      {/* Stats Grid */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <StatCard title="Total Citizens" value={stats.totalUsers} icon={Users} color="bg-blue-500" />
-        <StatCard title="Monthly Revenue" value={stats.totalRevenue} icon={CreditCard} color="bg-emerald-500" trend="+12%" />
-        <StatCard title="Active Prize Pool" value={stats.totalPrizePool} icon={Trophy} color="bg-indigo-500" />
-        <StatCard title="Charity Impact" value={stats.totalCharityImpact} icon={Heart} color="bg-rose-500" />
+      {/* Stats Cluster */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+        <StatCard title="Total Citizens" value={stats.totalUsers} icon={Users} color="bg-blue-600" />
+        <StatCard title="Monthly Revenue" value={stats.totalRevenue} icon={CreditCard} color="bg-emerald-600" trend="+12%" />
+        <StatCard title="Active Prize Pool" value={stats.totalPrizePool} icon={Trophy} color="bg-indigo-600" />
+        <StatCard title="Charity Impact" value={stats.totalCharityImpact} icon={Heart} color="bg-rose-600" />
       </div>
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12">
-        {/* Sidebar Nav */}
-        <nav className="lg:w-64 space-y-2">
+      {/* Workspace */}
+      <main className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16">
+        {/* Navigation Rail */}
+        <nav className="lg:w-72 space-y-3">
           {[
             { id: 'users', label: 'Citizens', icon: Users },
-            { id: 'subscriptions', label: 'Treasury', icon: CreditCard },
-            { id: 'draws', label: 'Draw History', icon: Play },
+            { id: 'draws', label: 'History', icon: Play },
             { id: 'winners', label: 'Victories', icon: Trophy },
-            { id: 'charity', label: 'Impact Partner', icon: Heart },
+            { id: 'charity', label: 'Impact', icon: Heart },
+            { id: 'config', label: 'Protocol', icon: Settings },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all ${
+              className={`w-full flex items-center gap-5 px-8 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-500 ${
                 activeTab === tab.id 
-                  ? 'bg-slate-900 text-white shadow-xl' 
-                  : 'text-slate-500 hover:bg-white hover:text-slate-900'
+                  ? 'bg-slate-900 text-white shadow-2xl shadow-slate-300 translate-x-2' 
+                  : 'text-slate-400 hover:bg-white hover:text-indigo-600'
               }`}
             >
-              <tab.icon className="w-5 h-5" />
+              <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-indigo-400' : ''}`} />
               {tab.label}
             </button>
           ))}
         </nav>
 
-        {/* Dynamic Table Section */}
-        <section className="flex-1 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">{activeTab} Ledger</h2>
-              <p className="text-xs font-bold text-slate-400">Viewing all records within the {activeTab} domain.</p>
-            </div>
-            
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search database..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition font-bold text-sm"
-              />
-            </div>
-          </div>
+        {/* Viewport */}
+        <section className="flex-1 min-h-[600px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: 'circOut' }}
+            >
+              {activeTab === 'users' && (
+                <AdminUsers 
+                   users={data.users} 
+                   subscriptions={data.subscriptions}
+                   scores={data.scores}
+                   onRefresh={loadData} 
+                />
+              )}
 
-          <div className="flex-1 overflow-auto max-h-[600px]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="p-4"
-              >
-                {/* Dynamic Content based on tab */}
-                {activeTab === 'users' && (
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
-                        <th className="px-6 py-4">User Identity</th>
-                        <th className="px-6 py-4">Join Date</th>
-                        <th className="px-6 py-4">Type</th>
-                        <th className="px-6 py-4">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {(data.users || []).filter((u:any) => u.email?.includes(searchTerm)).map((user:any) => (
-                        <tr key={user.id} className="group hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-5">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
-                                {user.email?.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-bold text-slate-700">{user.email}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 text-sm font-medium text-slate-500">{new Date(user.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 py-5">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${user.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
-                              {user.role === 'admin' ? 'Admin' : 'Citizen'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-5">
-                            <button className="p-2 text-slate-400 hover:text-indigo-600 transition">
-                              <ChevronRight className="w-5 h-5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+              {activeTab === 'winners' && (
+                <AdminWinners 
+                   winners={data.winners} 
+                   onRefresh={loadData} 
+                />
+              )}
 
-                {activeTab === 'winners' && (
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
-                        <th className="px-6 py-4">Victor</th>
-                        <th className="px-6 py-4">Prize</th>
-                        <th className="px-6 py-4">Status</th>
-                        <th className="px-6 py-4">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {(data.winners || []).map((winner:any) => (
-                        <tr key={winner.id} className="group hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-5">
-                            <div className="font-bold text-slate-700">{winner.profiles?.email || 'Unknown'}</div>
-                            <div className="text-[10px] font-bold text-slate-400">{winner.match_count} Matches</div>
-                          </td>
-                          <td className="px-6 py-5 font-black text-slate-800">₹{winner.winnings.toLocaleString()}</td>
-                          <td className="px-6 py-5">
-                            <div className="flex items-center gap-2">
-                              {winner.status === 'verified' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Clock className="w-4 h-4 text-amber-500" />}
-                              <span className={`text-[10px] font-black uppercase tracking-widest ${winner.status === 'verified' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                {winner.status}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="flex gap-2">
-                              {winner.status === 'pending' && (
-                                <button className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition">Approve</button>
-                              )}
-                              <button className="px-3 py-1 bg-slate-50 text-slate-400 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition">View</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+              {activeTab === 'charity' && (
+                <AdminCharities 
+                   charities={data.charities} 
+                   onRefresh={loadData} 
+                />
+              )}
 
-                {activeTab === 'draws' && (
-                  <div className="space-y-4 p-4">
-                    {(data.draws || []).map((draw:any) => (
-                      <div key={draw.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div className="flex gap-4 items-center">
-                          <div className="p-4 bg-white rounded-2xl shadow-sm">
-                            <Play className="w-6 h-6 text-indigo-500" />
-                          </div>
-                          <div>
-                            <h4 className="font-black text-slate-900 tracking-tight">Cycle #{draw.id.slice(0, 8)}</h4>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date(draw.created_at).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          {draw.winning_numbers.map((num:number, i:number) => (
-                            <div key={i} className="w-10 h-10 rounded-full bg-white border border-indigo-100 flex items-center justify-center font-black text-indigo-600 text-sm shadow-sm">
-                              {num}
+              {activeTab === 'draws' && (
+                <div className="space-y-6">
+                   {(data.draws || []).map((draw:any) => (
+                      <div key={draw.id} className="p-10 bg-white border border-slate-50 rounded-[3rem] shadow-sm flex flex-col md:flex-row justify-between items-center gap-10 group hover:shadow-xl transition-all duration-500">
+                         <div className="flex gap-8 items-center">
+                            <div className="w-16 h-16 bg-slate-50 rounded-[1.5rem] flex items-center justify-center shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                               <Play className="w-6 h-6" />
                             </div>
-                          ))}
-                        </div>
+                            <div>
+                               <h4 className="font-black text-slate-900 text-xl tracking-tight">Cycle #{draw.id.slice(0, 8)}</h4>
+                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(draw.created_at).toLocaleDateString()} • {draw.status}</p>
+                            </div>
+                         </div>
+                         
+                         <div className="flex gap-3">
+                            {draw.winning_numbers.map((num:number, i:number) => (
+                               <div key={i} className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-lg shadow-xl shadow-slate-200">
+                                  {num}
+                               </div>
+                            ))}
+                         </div>
 
-                        <div className="text-right">
-                          <div className="text-xl font-black text-slate-800">{draw.draw_results?.length || 0} Winners</div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Payout Pending</div>
-                        </div>
+                         <div className="text-right">
+                            <div className="text-2xl font-black text-slate-900">{draw.draw_results?.length || 0} Victors</div>
+                            <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-1">Status: Finalized</div>
+                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                   ))}
+                </div>
+              )}
 
-                {(activeTab === 'subscriptions' || activeTab === 'charity') && (
-                  <div className="p-12 text-center">
-                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                       <RefreshCw className="w-8 h-8 text-slate-200 animate-spin" />
-                    </div>
-                    <h3 className="text-xl font-black text-slate-800 mb-2">Detail View Pending</h3>
-                    <p className="text-slate-400 font-medium max-w-sm mx-auto">This ledger module is currently synchronizing with the primary database infrastructure.</p>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+              {activeTab === 'config' && (
+                <div className="p-20 text-center bg-white border border-slate-50 rounded-[3rem] shadow-sm">
+                   <Settings className="w-16 h-16 text-slate-200 mx-auto mb-8 animate-spin-slow" />
+                   <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">Protocol Settings</h3>
+                   <p className="text-slate-400 font-bold max-w-md mx-auto">System-wide parameters including draw mode (Algorithmic / Pure Random) and payout thresholds are currently locked by the root kernel.</p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </section>
       </main>
     </div>
