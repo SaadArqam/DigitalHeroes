@@ -22,14 +22,24 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect dashboard routes
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Protect admin routes
-  if (!user && request.nextUrl.pathname.startsWith('/admin')) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    } else {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error || !profile?.is_admin) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    }
   }
 
   return supabaseResponse
