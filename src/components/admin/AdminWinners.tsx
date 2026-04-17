@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, CheckCircle, XCircle, Clock, Eye, Download, Search, Mail, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Trophy, CheckCircle, XCircle, Clock, Eye, Download, Search, Mail, ExternalLink, ShieldCheck, Calendar } from 'lucide-react';
 import { updateWinnerStatus } from '@/app/actions/admin';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
