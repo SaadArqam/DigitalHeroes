@@ -63,6 +63,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && request.nextUrl.pathname.startsWith('/admin')) {
+    // Admin check: email OR is_admin flag
+    const isAdminEmail = user.email === 'admin@gmail.com' || user.email === 'your@email.com';
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('is_admin')
@@ -71,13 +74,18 @@ export async function proxy(request: NextRequest) {
 
     if (error) {
       console.error(`MIDDLEWARE: Error checking admin status for user ${user.id}. Error:`, error);
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      // Fallback to email check if DB fails
+      if (!isAdminEmail) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
     }
 
-    if (!profile || !profile.is_admin) {
-      console.log(`MIDDLEWARE: Non-admin user ${user.id} attempting to access /admin. Redirecting to /dashboard.`);
+    if (!isAdminEmail && (!profile || !profile.is_admin)) {
+      console.log(`MIDDLEWARE: Non-admin user ${user.id} (${user.email}) attempting to access /admin. Redirecting to /dashboard.`);
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
+    
+    console.log(`MIDDLEWARE: Admin access granted for ${user.email}`);
   }
 
   return supabaseResponse

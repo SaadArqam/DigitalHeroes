@@ -14,3 +14,4 @@ WHERE user_id = 'YOUR_ADMIN_USER_ID_HERE';
 
 -- Grant necessary permissions
 -- This ensures only admin users can access admin functions
+a

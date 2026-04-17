@@ -54,9 +54,14 @@ export default function Navbar() {
               <div className="w-24 h-10 bg-card rounded-xl animate-pulse border border-card-border"></div>
             ) : isAuthenticated ? (
               <>
-                <Link href="/dashboard" className={navLinkClasses("/dashboard")}>
-                  Terminal
-                </Link>
+                 <Link href="/dashboard" className={navLinkClasses("/dashboard")}>
+                   Terminal
+                 </Link>
+                 {(user?.email === 'admin@gmail.com' || user?.email === 'your@email.com') && (
+                   <Link href="/admin" className={navLinkClasses("/admin")}>
+                     Admin
+                   </Link>
+                 )}
                 <button
                   onClick={signOut}
                   className="flex items-center gap-2 p-3 rounded-xl bg-card border border-card-border text-text-secondary hover:text-rose-500 transition-colors group"
