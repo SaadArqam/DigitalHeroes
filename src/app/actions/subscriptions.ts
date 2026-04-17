@@ -417,7 +417,8 @@ export async function createBillingPortalSession(): Promise<CheckoutSessionRespo
 
     return {
       success: true,
-      url: session.url
+      url: session.url,
+      message: 'Portal initialized successfully'
     };
   } catch (error) {
     console.error('Error creating billing portal session:', error);
