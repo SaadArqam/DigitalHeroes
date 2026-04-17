@@ -9,6 +9,10 @@ import PricingComparison from '@/components/pricing/PricingComparison';
 import TrustBadges from '@/components/pricing/TrustBadges';
 import Navbar from '@/components/navbar';
 
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+
 function SubscribePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,15 +22,10 @@ function SubscribePageContent() {
   const [success, setSuccess] = useState<string>('');
 
   useEffect(() => {
-    // Check for success/canceled parameters
-    const successParam = searchParams.get('success');
+    // Check for canceled parameter
     const canceledParam = searchParams.get('canceled');
-    const sessionId = searchParams.get('session_id');
 
-    if (successParam === 'true' && sessionId) {
-      setSuccess('Payment successful! Your subscription is being activated.');
-      router.replace('/subscribe');
-    } else if (canceledParam === 'true') {
+    if (canceledParam === 'true') {
       setError('Payment was canceled. You can try again anytime.');
       router.replace('/subscribe');
     }
@@ -66,44 +65,56 @@ function SubscribePageContent() {
 
   if (subscription?.status === 'active') {
     return (
-      <div className="min-h-screen bg-slate-50 selection:bg-indigo-100">
+      <div className="min-h-screen bg-slate-50 selection:bg-indigo-100 relative overflow-hidden">
         <Navbar />
-        <div className="pt-32 pb-24 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white border border-slate-200 rounded-[3rem] p-12 text-center shadow-xl">
-              <div className="mb-8 relative">
-                <div className="absolute inset-0 bg-emerald-500/10 blur-[40px] rounded-full"></div>
-                <div className="relative inline-flex items-center justify-center w-20 h-20 bg-emerald-100/50 text-emerald-600 rounded-2xl border border-emerald-200 shadow-sm">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              </div>
-              <h2 className="text-3xl font-black text-slate-900 mb-4 uppercase tracking-tight">Active Membership</h2>
-              <p className="text-lg text-slate-500 font-medium mb-12">
-                Welcome to the elite tier. Your status is active and your contribution is making a difference.
-              </p>
-              
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-8 mb-12 text-left space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">Current Plan</span>
-                  <span className="text-lg font-black text-slate-900 uppercase">{subscription.plan}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">Renews On</span>
-                  <span className="text-lg font-black text-slate-900 uppercase">
-                    {new Date(subscription.current_period_end).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
+        
+        {/* Background Decor */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="w-full py-5 bg-slate-900 text-white font-black text-xl uppercase tracking-widest rounded-2xl hover:bg-indigo-600 hover:shadow-xl transition-all active:scale-95"
-              >
-                Enter Dashboard
-              </button>
-            </div>
+        <div className="pt-40 pb-24 px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-xl mx-auto">
+            <Card variant="glass" className="border-indigo-500/20 shadow-indigo">
+              <CardHeader className="text-center pb-10">
+                <div className="flex justify-center mb-6">
+                  <div className="w-20 h-20 bg-emerald-500 text-white rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-in zoom-in duration-500">
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <Badge variant="emerald" className="mb-4">Live Membership</Badge>
+                <CardTitle className="text-4xl">You are already subscribed</CardTitle>
+                <CardDescription className="text-lg mt-4 px-4">
+                  Manage your elite membership, scores, and charity preferences directly from your player terminal.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-8">
+                <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden group">
+                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent"></div>
+                   <div className="relative z-10 flex justify-between items-center">
+                      <div>
+                         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300 mb-1">Current Tier</div>
+                         <div className="text-2xl font-black uppercase tracking-tight">{subscription.plan}</div>
+                      </div>
+                      <div className="text-right">
+                         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300 mb-1">Renewal Date</div>
+                         <div className="text-lg font-bold">{new Date(subscription.current_period_end).toLocaleDateString()}</div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                   <Button size="xl" variant="primary" onClick={() => router.push('/dashboard')} className="w-full">
+                      Enter Player Dashboard
+                   </Button>
+                   <Button size="md" variant="ghost" className="text-slate-400">
+                      Need to cancel? Visit standard billing
+                   </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
