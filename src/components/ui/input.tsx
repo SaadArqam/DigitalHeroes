@@ -13,6 +13,7 @@ interface InputProps {
   className?: string;
   name?: string;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export function Input({
@@ -26,6 +27,7 @@ export function Input({
   className = '',
   name,
   required,
+  disabled,
 }: InputProps) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
@@ -46,6 +48,7 @@ export function Input({
           value={value}
           onChange={onChange}
           required={required}
+          disabled={disabled}
           placeholder={placeholder}
           className={`
             w-full bg-input-bg border-2 border-input-border text-white placeholder:text-text-muted
