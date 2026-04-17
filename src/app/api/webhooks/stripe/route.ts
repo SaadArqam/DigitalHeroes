@@ -1,14 +1,21 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 
-// Create Supabase client with service role key for admin operations
 function createSupabaseAdminClient() {
-  return createClient();
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
 }
 
-// Initialize Stripe lazily to avoid build-time issues
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY is not set');
@@ -16,6 +23,35 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2026-03-25.dahlia',
   });
+}
+
+const STATUS_MAP: Record<string, 'active' | 'lapsed' | 'cancelled'> = {
+  active: 'active',
+  trialing: 'active',
+  past_due: 'lapsed',
+  unpaid: 'lapsed',
+  incomplete: 'lapsed',
+  incomplete_expired: 'lapsed',
+  canceled: 'cancelled',
+  cancelled: 'cancelled'
+};
+
+async function isEventProcessed(eventId: string, supabase: any): Promise<boolean> {
+  const { data } = await supabase
+    .from('webhook_events')
+    .select('id')
+    .eq('stripe_event_id', eventId)
+    .single();
+  return !!data;
+}
+
+async function markEventProcessed(eventId: string, supabase: any) {
+  await supabase
+    .from('webhook_events')
+    .insert({
+      stripe_event_id: eventId,
+      processed_at: new Date().toISOString(),
+    });
 }
 
 export async function POST(req: Request) {
@@ -40,10 +76,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create Supabase client with service role key for admin access
     const supabase = createSupabaseAdminClient();
+    const eventId = event.id;
 
-    // Handle different event types
+    if (await isEventProcessed(eventId, supabase)) {
+      console.log(`Event ${eventId} already processed`);
+      return NextResponse.json({ received: true });
+    }
+    await markEventProcessed(eventId, supabase);
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -51,21 +92,23 @@ export async function POST(req: Request) {
         break;
       }
 
+      case 'invoice.paid':
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
         await handleInvoicePaymentSucceeded(invoice, supabase);
         break;
       }
 
-      case 'customer.subscription.created': {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionCreated(subscription, supabase);
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoicePaymentFailed(invoice, supabase);
         break;
       }
 
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdated(subscription, supabase);
+        await handleSubscriptionUpsert(subscription, supabase);
         break;
       }
 
@@ -101,8 +144,6 @@ async function handleCheckoutSessionCompleted(
       return;
     }
 
-    // If subscription is already active, no need to do anything here
-    // It will be handled by the subscription.created event
     console.log(`Checkout session completed for user: ${supabase_user_id}, plan: ${plan}`);
   } catch (error) {
     console.error('Error handling checkout session completed:', error);
@@ -117,70 +158,34 @@ async function handleInvoicePaymentSucceeded(
     if ((invoice as any).subscription) {
       const stripe = getStripe();
       const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription.toString());
-      await updateSubscriptionInDatabase(subscription, supabase);
+      await handleSubscriptionUpsert(subscription, supabase);
     }
   } catch (error) {
     console.error('Error handling invoice payment succeeded:', error);
   }
 }
 
-async function handleSubscriptionCreated(
-  subscription: Stripe.Subscription,
+async function handleInvoicePaymentFailed(
+  invoice: Stripe.Invoice,
   supabase: any
 ) {
   try {
-    await updateSubscriptionInDatabase(subscription, supabase);
-    console.log(`Subscription created: ${subscription.id}`);
-  } catch (error) {
-    console.error('Error handling subscription created:', error);
-  }
-}
-
-async function handleSubscriptionUpdated(
-  subscription: Stripe.Subscription,
-  supabase: any
-) {
-  try {
-    await updateSubscriptionInDatabase(subscription, supabase);
-    console.log(`Subscription updated: ${subscription.id}`);
-  } catch (error) {
-    console.error('Error handling subscription updated:', error);
-  }
-}
-
-async function handleSubscriptionDeleted(
-  subscription: Stripe.Subscription,
-  supabase: any
-) {
-  try {
-    // Mark subscription as canceled in database
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({
-        status: 'canceled',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('stripe_subscription_id', subscription.id);
-
-    if (error) {
-      console.error('Error updating subscription status:', error);
-      throw error;
+    if ((invoice as any).subscription) {
+      const stripe = getStripe();
+      const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription.toString());
+      await handleSubscriptionUpsert(subscription, supabase);
     }
-
-    console.log(`Subscription deleted: ${subscription.id}`);
   } catch (error) {
-    console.error('Error handling subscription deleted:', error);
+    console.error('Error handling invoice payment failed:', error);
   }
 }
 
-async function updateSubscriptionInDatabase(
+async function handleSubscriptionUpsert(
   subscription: Stripe.Subscription,
   supabase: any
 ) {
   try {
     const customerId = subscription.customer as string;
-    
-    // Get customer to find user ID
     const stripe = getStripe();
     const customer = await stripe.customers.retrieve(customerId);
     const supabaseUserId = (customer as Stripe.Customer).metadata?.supabase_user_id;
@@ -190,7 +195,6 @@ async function updateSubscriptionInDatabase(
       return;
     }
 
-    // Determine plan type from price
     const priceId = subscription.items.data[0]?.price?.id;
     let plan: 'monthly' | 'yearly' = 'monthly';
     
@@ -200,13 +204,22 @@ async function updateSubscriptionInDatabase(
       plan = 'monthly';
     }
 
-    // Map Stripe status to our database status
-    let status: string = subscription.status;
-    if (subscription.cancel_at_period_end) {
-      status = 'canceled';
+    let baseStatus = subscription.status;
+    if (subscription.cancel_at_period_end && subscription.status === 'active') {
+      baseStatus = 'canceled';
     }
+    const normalizedStatus = STATUS_MAP[baseStatus] || 'lapsed';
 
-    // Check if subscription already exists
+    const subscriptionData = {
+      user_id: supabaseUserId,
+      plan,
+      status: normalizedStatus,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscription.id,
+      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
     const { data: existingSub, error: fetchError } = await supabase
       .from('subscriptions')
       .select('*')
@@ -218,18 +231,7 @@ async function updateSubscriptionInDatabase(
       throw fetchError;
     }
 
-    const subscriptionData = {
-      user_id: supabaseUserId,
-      plan,
-      status,
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscription.id,
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
     if (existingSub) {
-      // Update existing subscription
       const { error: updateError } = await supabase
         .from('subscriptions')
         .update(subscriptionData)
@@ -240,23 +242,38 @@ async function updateSubscriptionInDatabase(
         throw updateError;
       }
     } else {
-      // Create new subscription
-      const { error: insertError } = await supabase
+      const { data, error: upsertError } = await supabase
         .from('subscriptions')
-        .insert({
+        .upsert({
           ...subscriptionData,
           created_at: new Date().toISOString(),
-        });
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
 
-      if (insertError) {
-        console.error('Error inserting subscription:', insertError);
-        throw insertError;
+      if (upsertError) {
+        console.error('Error upserting subscription:', upsertError);
+        throw upsertError;
       }
     }
 
-    console.log(`Subscription ${subscription.id} synced to database for user ${supabaseUserId}`);
+    console.log(`Subscription ${subscription.id} synced to database for user ${supabaseUserId} with status ${normalizedStatus}`);
   } catch (error) {
-    console.error('Error updating subscription in database:', error);
+    console.error('Error handling subscription upsert:', error);
     throw error;
+  }
+}
+
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  supabase: any
+) {
+  try {
+    await handleSubscriptionUpsert(subscription, supabase);
+  } catch (error) {
+    console.error('Error handling subscription deleted:', error);
   }
 }

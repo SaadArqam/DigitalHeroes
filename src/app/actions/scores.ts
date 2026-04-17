@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ScoreSchema, ScoreIdSchema } from '@/lib/validations';
 import { ScoreActionResponse } from '@/lib/types';
+import { checkActiveSubscription } from '@/lib/subscription';
 
 export async function addScore(score: number, date: string): Promise<ScoreActionResponse> {
   try {
@@ -10,14 +11,17 @@ export async function addScore(score: number, date: string): Promise<ScoreAction
     const validatedData = ScoreSchema.parse({ score, date });
 
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const subCheck = await checkActiveSubscription(supabase);
 
-    if (authError || !user) {
+    if (!subCheck.valid) {
       return {
         success: false,
-        message: 'You must be logged in to add a score'
+        message: subCheck.reason === 'not_authenticated' 
+          ? 'You must be logged in to add a score' 
+          : 'You must have an active subscription to add a score'
       };
     }
+    const { user } = subCheck;
 
     // Check if score already exists for this date
     const { data: existingScore, error: checkError } = await supabase
@@ -111,14 +115,17 @@ export async function editScore(id: string, score: number, date: string): Promis
     const validatedData = ScoreSchema.parse({ score, date });
 
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const subCheck = await checkActiveSubscription(supabase);
 
-    if (authError || !user) {
+    if (!subCheck.valid) {
       return {
         success: false,
-        message: 'You must be logged in to edit a score'
+        message: subCheck.reason === 'not_authenticated' 
+          ? 'You must be logged in to edit a score' 
+          : 'You must have an active subscription to edit a score'
       };
     }
+    const { user } = subCheck;
 
     // Check if score exists and belongs to user
     const { data: existingScore, error: fetchError } = await supabase
@@ -196,14 +203,17 @@ export async function deleteScore(id: string): Promise<ScoreActionResponse> {
     const validatedId = ScoreIdSchema.parse({ id });
 
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const subCheck = await checkActiveSubscription(supabase);
 
-    if (authError || !user) {
+    if (!subCheck.valid) {
       return {
         success: false,
-        message: 'You must be logged in to delete a score'
+        message: subCheck.reason === 'not_authenticated' 
+          ? 'You must be logged in to delete a score' 
+          : 'You must have an active subscription to delete a score'
       };
     }
+    const { user } = subCheck;
 
     // Check if score exists and belongs to user
     const { data: existingScore, error: fetchError } = await supabase
@@ -256,14 +266,17 @@ export async function deleteScore(id: string): Promise<ScoreActionResponse> {
 export async function getUserScores(): Promise<{ success: boolean; message: string; data?: any[] }> {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const subCheck = await checkActiveSubscription(supabase);
 
-    if (authError || !user) {
+    if (!subCheck.valid) {
       return {
         success: false,
-        message: 'You must be logged in to view scores'
+        message: subCheck.reason === 'not_authenticated' 
+          ? 'You must be logged in to view scores' 
+          : 'You must have an active subscription to view scores'
       };
     }
+    const { user } = subCheck;
 
     const { data: scores, error: fetchError } = await supabase
       .from('scores')

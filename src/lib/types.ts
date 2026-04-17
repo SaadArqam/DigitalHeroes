@@ -21,7 +21,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan: 'monthly' | 'yearly';
-  status: 'active' | 'canceled' | 'past_due' | 'incomplete' | 'incomplete_expired' | 'trialing' | 'unpaid';
+  status: 'active' | 'cancelled' | 'lapsed';
   stripe_customer_id: string;
   stripe_subscription_id: string;
   current_period_end: string;

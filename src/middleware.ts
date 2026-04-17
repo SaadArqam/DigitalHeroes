@@ -26,19 +26,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    } else {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('user_id', user.id)
-        .single();
+  if (!user && request.nextUrl.pathname.startsWith('/admin')) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
 
-      if (error || !profile?.is_admin) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
+  if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .single();
+
+    if (subError || subscription?.status !== 'active') {
+      return NextResponse.redirect(new URL('/subscribe', request.url));
+    }
+  }
+
+  if (user && request.nextUrl.pathname.startsWith('/admin')) {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error || !profile?.is_admin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 

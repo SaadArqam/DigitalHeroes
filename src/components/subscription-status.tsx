@@ -37,10 +37,8 @@ export default function SubscriptionStatus({ className = '' }: SubscriptionStatu
     if (!subscription) return 'gray';
     switch (subscription.status) {
       case 'active': return 'green';
-      case 'canceled': return 'red';
-      case 'past_due': return 'yellow';
-      case 'incomplete': return 'orange';
-      case 'trialing': return 'blue';
+      case 'cancelled': return 'red';
+      case 'lapsed': return 'yellow';
       default: return 'gray';
     }
   };
@@ -49,10 +47,8 @@ export default function SubscriptionStatus({ className = '' }: SubscriptionStatu
     if (!subscription) return 'No Subscription';
     switch (subscription.status) {
       case 'active': return 'Active';
-      case 'canceled': return 'Canceled';
-      case 'past_due': return 'Past Due';
-      case 'incomplete': return 'Incomplete';
-      case 'trialing': return 'Trial';
+      case 'cancelled': return 'Cancelled';
+      case 'lapsed': return 'Lapsed';
       default: return subscription.status;
     }
   };
