@@ -60,7 +60,7 @@ export default function SignupPage() {
       }
 
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      setError(err.message ?? 'Unknown error' || 'An unexpected error occurred');
       setLoading(false);
     }
   }

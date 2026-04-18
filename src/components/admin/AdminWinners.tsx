@@ -25,7 +25,7 @@ export function AdminWinners({ winners, onRefresh }: AdminWinnersProps) {
         toast(`Winner status updated: ${status}`, 'success');
         onRefresh();
       } else {
-        toast(res.message, 'error');
+        toast(res.message ?? 'Unknown error', 'error');
       }
     } finally {
       setLoadingId(null);

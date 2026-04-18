@@ -25,7 +25,7 @@ export default function SubscriptionStatus({ className = '' }: SubscriptionStatu
         setSubscription(result.data || null);
         setError('');
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to fetch subscription status');

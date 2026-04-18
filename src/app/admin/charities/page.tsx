@@ -50,7 +50,7 @@ export default function AdminCharitiesPage() {
       resetForm();
       await loadCharities();
     } else {
-      toast(res.message ?? 'Operation Error', 'error');
+      toast(res.message ?? 'Unknown error' ?? 'Operation Error', 'error');
     }
     setOpLoading(false);
   };

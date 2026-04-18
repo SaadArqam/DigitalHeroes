@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
       toast('Status Propagated', 'success');
       await loadUsers();
     } else {
-      toast(res.message ?? 'Update Failed', 'error');
+      toast(res.message ?? 'Unknown error' ?? 'Update Failed', 'error');
     }
     setActionLoading(null);
   };

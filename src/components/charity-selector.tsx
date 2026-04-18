@@ -36,7 +36,7 @@ export default function CharitySelector({
         setCharities(result.data || []);
         setError('');
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to fetch charities');
@@ -96,7 +96,7 @@ export default function CharitySelector({
           }
         }
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to save charity preference');

@@ -32,7 +32,7 @@ export default function CharityPreference({ className = '', onPreferenceUpdated 
         setCharities(result.data || []);
         setError('');
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to fetch charities');
@@ -48,7 +48,7 @@ export default function CharityPreference({ className = '', onPreferenceUpdated 
         setPreferences(result.data || []);
         setError('');
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to fetch charity preferences');
@@ -92,7 +92,7 @@ export default function CharityPreference({ className = '', onPreferenceUpdated 
         fetchPreferences(); // Refresh preferences
         onPreferenceUpdated?.();
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to save charity preference');

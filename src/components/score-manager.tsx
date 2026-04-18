@@ -39,7 +39,7 @@ export default function ScoreManager() {
       setNewScore(''); setNewDate('');
       await fetchScores();
     } else {
-      toast(res.message, 'error');
+      toast(res.message ?? 'Unknown error', 'error');
     }
     setActionLoading(false);
   };
@@ -64,7 +64,7 @@ export default function ScoreManager() {
       setEditingId(null);
       await fetchScores();
     } else {
-      toast(res.message, 'error');
+      toast(res.message ?? 'Unknown error', 'error');
     }
     setActionLoading(false);
   };

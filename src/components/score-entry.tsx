@@ -57,8 +57,8 @@ export default function ScoreEntry({
       }
       onScoreAdded?.(); 
     } else {
-      toast(result.message, 'error');
-      setError(result.message);
+      toast(result.message ?? 'Unknown error', 'error');
+      setError(result.message ?? 'Unknown error');
     }
     setLoading(false);
   };

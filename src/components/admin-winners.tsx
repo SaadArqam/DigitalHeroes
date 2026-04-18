@@ -27,7 +27,7 @@ export default function AdminWinners({ className = '' }: AdminWinnersProps) {
         setWinners(result.data || []);
         setError('');
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to fetch winners');
@@ -46,7 +46,7 @@ export default function AdminWinners({ className = '' }: AdminWinnersProps) {
             : winner
         ));
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to approve winner');
@@ -63,7 +63,7 @@ export default function AdminWinners({ className = '' }: AdminWinnersProps) {
             : winner
         ));
       } else {
-        setError(result.message);
+        setError(result.message ?? 'Unknown error');
       }
     } catch (err) {
       setError('Failed to reject winner');

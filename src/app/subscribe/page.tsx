@@ -51,7 +51,7 @@ function SubscribePageContent() {
       if (result.success && result.url) {
         window.location.href = result.url;
       } else {
-        setError(result.message || 'Failed to create checkout session');
+        setError(result.message ?? 'Unknown error' || 'Failed to create checkout session');
       }
     } catch (err) {
       setError('An unexpected error occurred');

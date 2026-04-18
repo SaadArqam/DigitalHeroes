@@ -50,7 +50,7 @@ export function AdminCharities({ charities, onRefresh }: AdminCharitiesProps) {
         setEditingId(null);
         onRefresh();
       } else {
-        toast(res.message, 'error');
+        toast(res.message ?? 'Unknown error', 'error');
       }
     } finally {
       setLoading(false);
@@ -64,7 +64,7 @@ export function AdminCharities({ charities, onRefresh }: AdminCharitiesProps) {
       toast('Partner Removed', 'success');
       onRefresh();
     } else {
-      toast(res.message, 'error');
+      toast(res.message ?? 'Unknown error', 'error');
     }
   };
 

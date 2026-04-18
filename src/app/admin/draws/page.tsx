@@ -40,7 +40,7 @@ export default function AdminDrawsPage() {
       setMonth('');
       await loadHistory();
     } else {
-      toast(res.message ?? 'Creation Error', 'error');
+      toast(res.message ?? 'Unknown error' ?? 'Creation Error', 'error');
     }
     setOpLoading(false);
   };
@@ -52,7 +52,7 @@ export default function AdminDrawsPage() {
       setSimulation({ ...res.data, drawId });
       toast('Simulation Complete', 'success');
     } else {
-      toast(res.message ?? 'Sim Error', 'error');
+      toast(res.message ?? 'Unknown error' ?? 'Sim Error', 'error');
     }
     setOpLoading(false);
   };
@@ -67,7 +67,7 @@ export default function AdminDrawsPage() {
       setSimulation(null);
       await loadHistory();
     } else {
-      toast(res.message ?? 'Publish Error', 'error');
+      toast(res.message ?? 'Unknown error' ?? 'Publish Error', 'error');
     }
     setOpLoading(false);
   };

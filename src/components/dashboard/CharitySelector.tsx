@@ -56,8 +56,8 @@ export function CharitySelector({ onComplete }: CharitySelectorProps) {
         toast('Impact partner locked', 'success');
         onComplete();
       } else {
-        toast(res.message, 'error');
-        setError(res.message);
+        toast(res.message ?? 'Unknown error', 'error');
+        setError(res.message ?? 'Unknown error');
       }
     } catch (err) {
       toast('Failed to save selection', 'error');
