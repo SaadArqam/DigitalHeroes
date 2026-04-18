@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { addScore, editScore, getUserScores } from '@/app/actions/scores';
+import { addScore, editScore, getScores } from '@/app/actions/scores';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,8 +29,8 @@ export default function ScoreEntry({
   }, []);
 
   const fetchRecentScores = async () => {
-    const result = await getUserScores();
-    if (result.success) setRecentScores(result.data || []);
+    const data = await getScores();
+    setRecentScores(data || []);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

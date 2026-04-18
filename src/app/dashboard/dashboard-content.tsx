@@ -4,9 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getUserSubscription } from '@/app/actions/subscriptions';
-import { getUserScores, deleteScore } from '@/app/actions/scores';
-import { getUserCharityPreferences } from '@/app/actions/charities';
-import { getWinnerDrawResults } from '@/app/actions/winners';
+import { getScores, deleteScore } from '@/app/actions/scores';
+import { getUserCharityPreference } from '@/app/actions/charities';
+import { getUserDrawResults } from '@/app/actions/draws';
 import { useToast } from '@/hooks/use-toast';
 
 import Navbar from '@/components/navbar';
@@ -60,15 +60,15 @@ function DashboardContentComponent() {
     try {
       const [subRes, scoreRes, charityRes, drawRes] = await Promise.all([
         getUserSubscription(),
-        getUserScores(),
-        getUserCharityPreferences(),
-        getWinnerDrawResults(),
+        getScores(),
+        getUserCharityPreference(),
+        getUserDrawResults(),
       ]);
       
       if (subRes.success) setSubscription(subRes.data);
-      if (scoreRes.success) setScores(scoreRes.data || []);
-      if (charityRes.success) setCharityPrefs(charityRes.data || []);
-      if (drawRes.success) setDrawResults(drawRes.data || []);
+      setScores(scoreRes || []);
+      if (charityRes.success) setCharityPrefs(charityRes.data ? [charityRes.data] : []);
+      setDrawResults(drawRes || []);
       
     } catch (err: any) {
       console.error('[DASHBOARD_SYNC_FAILURE]', err);
