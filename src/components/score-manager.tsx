@@ -31,7 +31,7 @@ export default function ScoreManager() {
   };
 
   const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setActionLoading(true);
     const res = await addScore(Number(newScore), newDate);
     if (res.success) {
@@ -56,7 +56,7 @@ export default function ScoreManager() {
   };
 
   const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setActionLoading(true);
     const res = await editScore(editingId!, Number(editFormData.score), editFormData.date);
     if (res.success) {
@@ -70,81 +70,103 @@ export default function ScoreManager() {
   };
 
   if (loading) return (
-     <div className="py-20 text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-4" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Decrypting Performance Ledger...</p>
-     </div>
+    <div className="py-20 text-center">
+      <Loader2 className="w-10 h-10 animate-spin text-primary-end mx-auto mb-6" />
+      <p className="text-xs font-black uppercase tracking-[0.3em] text-text-muted">Decrypting Performance Ledger...</p>
+    </div>
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Capacity HUD */}
-      <div className="flex justify-between items-center bg-slate-900/40 p-6 border border-slate-800 rounded-3xl backdrop-blur-sm">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Telemetry Capacity</p>
-          <p className="text-3xl font-black text-white">{scores.length}/5</p>
+      <div className="flex flex-col md:flex-row justify-between items-center bg-card/50 p-8 border border-card-border rounded-3xl backdrop-blur-md gap-6 text-center md:text-left">
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary-gradient/10 border border-primary-start/30 flex items-center justify-center">
+             <Activity className="w-8 h-8 text-primary-end" />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-text-muted mb-1">Telemetry Capacity</p>
+            <p className="text-4xl font-black text-white">{scores.length} <span className="text-xl text-text-muted">/ 5</span></p>
+          </div>
         </div>
-        <div className="w-32 h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+        <div className="w-full md:w-64 h-3 bg-background rounded-full overflow-hidden border border-card-border shadow-inner">
           <motion.div 
             initial={{ width: 0 }} 
-            animate={{ width: `${(scores.length / 5) * 100}%` }} 
-            className="h-full bg-gradient-to-r from-indigo-500 to-primary-end" 
+            animate={{ width: `${(Math.min(scores.length / 5, 1)) * 100}%` }} 
+            className="h-full bg-primary-gradient shadow-glow" 
           />
         </div>
       </div>
 
       {/* Manual Entry */}
-      <Card variant="glass" className="p-8 border-2 border-slate-800 bg-slate-950/50">
+      <div className="bg-card/30 border border-card-border p-8 rounded-[2.5rem]">
+        <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
+           <Plus className="w-5 h-5 text-primary-end" />
+           New Data Ingestion
+        </h3>
         <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
           <div className="md:col-span-5">
-            <Input label="Verification Score" type="number" placeholder="01-45" value={newScore} onChange={e => setNewScore(e.target.value)} icon={<Target className="w-5 h-5" />} required />
+            <Input label="Verification Score" type="number" placeholder="01-45" value={newScore} onChange={e => setNewScore(e.target.value)} icon={<Target className="w-5 h-5 text-text-muted" />} required />
           </div>
           <div className="md:col-span-4">
-            <Input label="Operation Date" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} icon={<Calendar className="w-5 h-5" />} required />
+            <Input label="Operation Date" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} icon={<Calendar className="w-5 h-5 text-text-muted" />} required />
           </div>
           <div className="md:col-span-3">
-            <Button type="submit" isLoading={actionLoading} className="w-full h-[52px] rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black uppercase tracking-widest shadow-xl shadow-indigo-900/10">
+            <Button type="submit" isLoading={actionLoading} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-premium">
               Log Result
             </Button>
           </div>
         </form>
-      </Card>
+      </div>
 
       {/* Records Registry */}
-      <div className="grid gap-4">
-        <AnimatePresence mode="popLayout">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-2">
+           <p className="text-xs font-black uppercase tracking-widest text-text-muted">History Log</p>
+           <p className="text-xs font-bold text-primary-end uppercase tracking-widest">{scores.length} Records Found</p>
+        </div>
+        
+        <AnimatePresence mode="popLayout" initial={false}>
           {scores.map(score => (
-            <motion.div layout key={score.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="group">
-              <Card variant="glass" className={`p-6 border-slate-800 bg-slate-900/10 transition-all ${editingId === score.id ? 'border-indigo-500 shadow-glow' : 'hover:border-slate-700'}`}>
+            <motion.div layout key={score.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}>
+              <div className={`p-6 border rounded-[1.5rem] transition-all bg-card/10 backdrop-blur-sm ${editingId === score.id ? 'border-primary-start shadow-glow ring-1 ring-primary-start/50' : 'border-card-border hover:border-primary-start/30'}`}>
                 {editingId === score.id ? (
-                  <form onSubmit={handleEdit} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    <div className="md:col-span-4"><Input label="Update Score" type="number" value={editFormData.score} onChange={e => setEditFormData({...editFormData, score: e.target.value})} required className="bg-slate-950" /></div>
-                    <div className="md:col-span-4"><Input label="Update Date" type="date" value={editFormData.date} onChange={e => setEditFormData({...editFormData, date: e.target.value})} required className="bg-slate-950" /></div>
-                    <div className="md:col-span-4 flex gap-2">
-                      <Button type="submit" isLoading={actionLoading} className="flex-1 rounded-xl"><Save className="w-4 h-4 mr-2" /> Commit</Button>
-                      <Button type="button" variant="secondary" onClick={() => setEditingId(null)} className="rounded-xl"><X className="w-4 h-4" /></Button>
+                  <form onSubmit={handleEdit} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                    <div className="md:col-span-4"><Input label="Override Score" type="number" value={editFormData.score} onChange={e => setEditFormData({...editFormData, score: e.target.value})} required /></div>
+                    <div className="md:col-span-4"><Input label="Override Date" type="date" value={editFormData.date} onChange={e => setEditFormData({...editFormData, date: e.target.value})} required /></div>
+                    <div className="md:col-span-4 flex gap-3">
+                      <Button type="submit" isLoading={actionLoading} className="flex-1 rounded-2xl"><Save className="w-4 h-4 mr-2" /> Commit</Button>
+                      <Button type="button" variant="secondary" onClick={() => setEditingId(null)} className="px-5 rounded-2xl"><X className="w-5 h-5" /></Button>
                     </div>
                   </form>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                      <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center font-black text-2xl text-white shadow-inner group-hover:text-indigo-400 transition-colors">{score.score}</div>
+                    <div className="flex items-center gap-8">
+                      <div className="w-16 h-16 rounded-2xl bg-background border border-card-border flex items-center justify-center font-black text-3xl text-white shadow-inner group-hover:text-primary-end transition-colors">{score.score}</div>
                       <div>
-                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none mb-1">Auth Date</p>
-                        <p className="font-bold text-white text-lg tracking-tight">{new Date(score.date).toLocaleDateString()}</p>
+                        <p className="text-[10px] font-black uppercase text-text-muted tracking-widest mb-1">Auth Date</p>
+                        <p className="font-bold text-white text-xl tracking-tight leading-none">{new Date(score.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => { setEditingId(score.id); setEditFormData({ score: score.score.toString(), date: score.date }); }} className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-500 hover:text-white transition-all"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(score.id)} className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-500 hover:text-rose-500 transition-all"><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex gap-3">
+                      <button onClick={() => { setEditingId(score.id); setEditFormData({ score: score.score.toString(), date: score.date }); }} className="w-12 h-12 flex items-center justify-center rounded-xl bg-background border border-card-border text-text-muted hover:text-white hover:border-primary-start/50 transition-all"><Pencil className="w-5 h-5" /></button>
+                      <button onClick={() => handleDelete(score.id)} className="w-12 h-12 flex items-center justify-center rounded-xl bg-background border border-card-border text-text-muted hover:text-rose-500 hover:border-rose-500/50 transition-all"><Trash2 className="w-5 h-5" /></button>
                     </div>
                   </div>
                 )}
-              </Card>
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>
-        {scores.length === 0 && <div className="py-20 text-center border-2 border-dashed border-slate-800 rounded-[3rem] opacity-30 text-slate-500 font-bold uppercase tracking-widest text-xs">No records synchronized.</div>}
+        
+        {scores.length === 0 && (
+          <div className="py-24 text-center border-2 border-dashed border-card-border rounded-[3rem] opacity-40">
+             <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto mb-6">
+                <Target className="w-8 h-8 text-text-muted" />
+             </div>
+             <p className="text-text-muted font-black uppercase tracking-widest text-xs">No records synchronized.</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -27,7 +27,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // 2. Dashboard Protection: Subscription Check
+  // 2. Redirect logged in users away from login/signup
+  if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // 3. Dashboard Protection: Subscription Check
   if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
     // Bypass subscription check if returning from a successful checkout session
     if (request.nextUrl.searchParams.get('success') === 'true') {
@@ -46,17 +51,15 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 3. Admin Protection: Role Check (is_admin OR email)
+  // 4. Admin Protection: Role Check (is_admin)
   if (user && request.nextUrl.pathname.startsWith('/admin')) {
-    const isAdminEmail = user.email === 'admin@gmail.com' || user.email === 'your@email.com';
-
-    const { data: profile, error } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('is_admin')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (!isAdminEmail && (!profile || profile.role !== 'admin')) {
+    if (!profile?.is_admin && user.email !== 'admin@gmail.com') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
@@ -66,14 +69,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc)
-     */
-    '/dashboard/:path*',
-    '/admin/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

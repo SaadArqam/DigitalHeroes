@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardContent from './dashboard-content';
 import Navbar from '@/components/navbar';
 import { PageContainer } from '@/components/ui/page-container';
-import ScoreManager from '@/components/ScoreManager';
+import ScoreManager from '@/components/score-manager';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <main className="min-h-screen">
       <Navbar />
       
       <PageContainer className="pt-24 pb-20 space-y-24">
@@ -22,12 +22,16 @@ export default async function DashboardPage() {
         <DashboardContent />
 
         {/* Unified Score Performance Management */}
-        <section className="max-w-7xl mx-auto px-4">
-           <div className="bg-slate-900/20 border border-slate-800/60 p-10 lg:p-16 rounded-[4rem] backdrop-blur-xl group hover:border-slate-700/60 transition-colors">
+        <section className="max-w-7xl mx-auto w-full">
+           <div className="bg-card/30 border border-card-border p-8 lg:p-12 rounded-[2.5rem] backdrop-blur-xl group hover:border-primary-start/30 transition-all duration-500">
+              <div className="mb-12">
+                 <h2 className="text-3xl font-black text-white mb-2">Performance <span className="text-gradient">Analytics</span></h2>
+                 <p className="text-text-secondary text-sm">Review your historical data and entry status.</p>
+              </div>
               <ScoreManager />
            </div>
         </section>
       </PageContainer>
-    </div>
+    </main>
   );
 }

@@ -9,7 +9,6 @@ import { getUserCharityPreference } from '@/app/actions/charities';
 import { getUserDrawResults } from '@/app/actions/draws';
 import { useToast } from '@/hooks/use-toast';
 
-import Navbar from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { PageContainer } from '@/components/ui/page-container';
@@ -20,7 +19,7 @@ import { WinningsCard } from '@/components/dashboard/WinningsCard';
 import { DrawsCard } from '@/components/dashboard/DrawsCard';
 import { CharitySelector } from '@/components/dashboard/CharitySelector';
 import ScoreEntry from '@/components/score-entry';
-import { Loader2, RefreshCw, Plus, CheckCircle2, Shield } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Shield } from 'lucide-react';
 
 function DashboardContentComponent() {
   const searchParams = useSearchParams();
@@ -29,9 +28,9 @@ function DashboardContentComponent() {
 
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
-   const [showScoreModal, setShowScoreModal] = useState(false);
-   const [editingScore, setEditingScore] = useState<any>(null);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [editingScore, setEditingScore] = useState<any>(null);
 
   const [subscription, setSubscription] = useState<any>(null);
   const [scores, setScores] = useState<any[]>([]);
@@ -97,41 +96,39 @@ function DashboardContentComponent() {
 
   if (loading) {
     return (
-      <PageContainer className="animate-pulse">
-        <div className="h-16 w-64 bg-card rounded-2xl mb-12" />
+      <div className="space-y-12 animate-in fade-in duration-500">
+        <div className="h-16 w-64 bg-card rounded-2xl animate-pulse" />
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
            <div className="lg:col-span-8 space-y-8">
-             <div className="h-96 bg-card rounded-[2.5rem]" />
+             <div className="h-96 bg-card rounded-[2.5rem] animate-pulse" />
              <div className="grid md:grid-cols-2 gap-8">
-               <div className="h-80 bg-card rounded-[2.5rem]" />
-               <div className="h-80 bg-card rounded-[2.5rem]" />
+               <div className="h-80 bg-card rounded-[2.5rem] animate-pulse" />
+               <div className="h-80 bg-card rounded-[2.5rem] animate-pulse" />
              </div>
            </div>
            <div className="lg:col-span-4 space-y-8">
-             <div className="h-[500px] bg-card rounded-[2.5rem]" />
-             <div className="h-[400px] bg-card rounded-[2.5rem]" />
+             <div className="h-[500px] bg-card rounded-[2.5rem] animate-pulse" />
+             <div className="h-[400px] bg-card rounded-[2.5rem] animate-pulse" />
            </div>
         </div>
-      </PageContainer>
+      </div>
     );
   }
 
   return (
-    <PageContainer>
-      <Navbar />
-
-      {/* Global Sync Indicator */}
+    <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Sync Indicator */}
       <AnimatePresence>
         {syncing && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]"
           >
-            <div className="bg-card border border-card-border px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 text-white">
+            <div className="bg-card/90 backdrop-blur-md border border-card-border px-6 py-3 rounded-full shadow-premium flex items-center gap-3">
                <Loader2 className="w-4 h-4 animate-spin text-primary-end" />
-               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary">Syncing Ledger</span>
+               <span className="text-[10px] font-black uppercase tracking-widest text-white">Syncing Ledger</span>
             </div>
           </motion.div>
         )}
@@ -142,25 +139,25 @@ function DashboardContentComponent() {
         <AnimatePresence>
           {showSuccessBanner && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               className="mb-12"
             >
-              <div className="bg-card rounded-[2.5rem] border-2 border-primary-start/20 p-8 shadow-glow relative overflow-hidden group">
-                <div className="absolute inset-0 bg-primary-gradient opacity-10 pointer-events-none" />
+              <div className="bg-card rounded-[2.5rem] border-2 border-primary-start/30 p-8 shadow-glow relative overflow-hidden">
+                <div className="absolute inset-0 bg-primary-gradient opacity-10" />
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                   <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                       <Shield className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center">
+                       <Shield className="w-8 h-8 text-emerald-500" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white tracking-tight">Active Status Verified</h3>
-                      <p className="text-text-secondary font-bold mt-1">Protocol synchronization is complete. Welcome to the elite tier.</p>
+                      <h3 className="text-2xl font-black text-white">Active Status Verified</h3>
+                      <p className="text-text-secondary font-medium">Your Elite tier benefits are now active.</p>
                     </div>
                   </div>
                   <Button onClick={() => setShowSuccessBanner(false)} variant="secondary" size="lg">
-                    Begin Journey
+                    Enter Terminal
                   </Button>
                 </div>
               </div>
@@ -169,48 +166,53 @@ function DashboardContentComponent() {
         </AnimatePresence>
 
         {!hasSelectedCharity ? (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto py-12">
+             <div className="text-center mb-12">
+               <h1 className="text-5xl font-black text-white mb-4">Select Your <span className="text-gradient">Mission</span></h1>
+               <p className="text-text-secondary text-lg">Every play supports a cause. Choose where your impact goes.</p>
+             </div>
              <CharitySelector onComplete={syncData} />
           </div>
         ) : (
           <>
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 px-2">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-card border border-card-border rounded-full mb-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-card/50 border border-card-border rounded-full mb-6">
                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                     <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">Node status: Active</span>
+                     <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Node Status: Active</span>
                   </div>
-                  <h1 className="text-5xl lg:text-7xl font-black text-white tracking-[ -0.05em] leading-[0.85]">
-                    Player <span className="text-gradient italic">Terminal</span>
+                  <h1 className="text-6xl lg:text-8xl font-black text-white tracking-tighter leading-none mb-4">
+                    Player <span className="text-gradient">Terminal</span>
                   </h1>
+                  <p className="text-text-secondary text-lg font-medium">Synchronized with GreenJack network protocols.</p>
                </div>
                
-               <div className="flex items-center gap-3">
+               <div className="flex items-center gap-4">
                   <Button 
                     onClick={syncData} 
                     variant="secondary" 
                     size="icon" 
                     isLoading={syncing}
-                    className="rounded-2xl"
+                    className="w-14 h-14 rounded-2xl"
                   >
-                    <RefreshCw className="w-5 h-5" />
+                    <RefreshCw className="w-6 h-6 text-text-secondary" />
                   </Button>
                   <Button 
                     onClick={() => setShowScoreModal(true)} 
                     variant="primary" 
                     size="lg"
-                    icon={<Plus className="w-4 h-4" />}
-                    className="rounded-2xl"
+                    icon={<Plus className="w-5 h-5" />}
+                    className="h-14 px-8 rounded-2xl"
                   >
                     New Score
                   </Button>
                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-               <div className="lg:col-span-8 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+               <div className="lg:col-span-8 space-y-10">
                   <DrawsCard latestDraw={drawResults[0]?.draws} userResult={drawResults[0]} />
-                  <div className="grid md:grid-cols-2 gap-8">
+                  <div className="grid md:grid-cols-2 gap-10">
                      <ScoresCard 
                        scores={scores} 
                        onAddClick={() => { setEditingScore(null); setShowScoreModal(true); }} 
@@ -221,7 +223,7 @@ function DashboardContentComponent() {
                   </div>
                </div>
 
-               <div className="lg:col-span-4 space-y-8">
+               <div className="lg:col-span-4 space-y-10">
                   <SubscriptionCard subscription={subscription} />
                   <CharityCard 
                     preferences={charityPrefs} 
@@ -236,20 +238,20 @@ function DashboardContentComponent() {
       <Modal 
         isOpen={showScoreModal} 
         onClose={() => { setShowScoreModal(false); setEditingScore(null); }}
-        title={editingScore ? "Edit Record" : "Record Score"}
+        title={editingScore ? "Override Record" : "New Performance Record"}
       >
         <ScoreEntry 
           initialData={editingScore}
           onScoreAdded={() => { setShowScoreModal(false); setEditingScore(null); syncData(); }} 
         />
       </Modal>
-    </PageContainer>
+    </div>
   );
 }
 
 export default function DashboardContent() {
   return (
-    <Suspense fallback={<PageContainer><div className="animate-pulse h-96 bg-card rounded-[2.5rem]" /></PageContainer>}>
+    <Suspense fallback={<div className="animate-pulse h-96 bg-card rounded-[2.5rem]" />}>
       <DashboardContentComponent />
     </Suspense>
   );
