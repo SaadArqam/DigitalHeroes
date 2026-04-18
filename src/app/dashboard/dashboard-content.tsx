@@ -227,8 +227,8 @@ function DashboardContentComponent() {
                <div className="lg:col-span-4 space-y-10">
                   <SubscriptionCard subscription={subscription} />
                   <CharityCard 
-                    preferences={charityPrefs} 
-                    onConfigClick={() => router.push('/dashboard/impact')} 
+                    preference={charityPrefs[0] || null} 
+                    planAmount={subscription?.plan === 'yearly' ? 500 : 50} 
                   />
                </div>
             </div>
