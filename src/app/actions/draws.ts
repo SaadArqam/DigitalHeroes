@@ -14,8 +14,10 @@ export async function createDraw(month: string, mode: 'random' | 'algorithmic' =
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, message: 'Unauthorized' };
   
-  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('user_id', user.id).maybeSingle();
-  if (!profile?.is_admin && user.email !== 'admin@gmail.com') return { success: false, message: 'Admin privileges required' };
+  const { data: profile } = await supabase.from('profiles').select('is_admin, role').eq('user_id', user.id).maybeSingle();
+  const isAdmin = profile?.is_admin || profile?.role === 'admin' || user.email === 'admin@gmail.com';
+
+  if (!isAdmin) return { success: false, message: 'Admin privileges required' };
 
   const { data, error } = await supabase
     .from('draws')
