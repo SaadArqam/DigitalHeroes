@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Heart, Sparkles, AlertCircle, Save, Loader2 } from 'lucide-react';
 import { PageContainer } from '@/components/ui/page-container';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 export default function CharityDetailPage() {
   const { id } = useParams();
