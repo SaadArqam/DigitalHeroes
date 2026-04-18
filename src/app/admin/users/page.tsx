@@ -100,7 +100,7 @@ export default function AdminUsersPage() {
                           </div>
                           <div className="flex flex-col">
                              <span className="text-sm font-bold text-white tracking-tight">{user.email}</span>
-                             <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest leading-none mt-1">{user.role}</span>
+                             <span className="text-[9px] font-black text-primary-end uppercase tracking-widest leading-none mt-1">{user.is_admin ? 'admin' : 'player'}</span>
                           </div>
                        </div>
                     </td>

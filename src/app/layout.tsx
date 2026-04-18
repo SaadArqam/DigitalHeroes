@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/hooks/use-toast";
+import { Navbar } from "@/components/layout/Navbar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,9 +38,11 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} h-full antialiased dark`}
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
     >
       <body className="min-h-full bg-background text-foreground selection:bg-primary-start/30 selection:text-white">
         <ToastProvider>
+          <Navbar />
           {children}
         </ToastProvider>
       </body>

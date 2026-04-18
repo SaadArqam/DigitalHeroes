@@ -85,8 +85,8 @@ export default async function AdminDashboard() {
                    </div>
                 </div>
                 <div className="flex items-center gap-3">
-                   <span className="px-3 py-1 bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-widest">
-                      {user.role}
+                   <span className="px-3 py-1 bg-primary-gradient/10 text-primary-end border border-primary-end/20 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">
+                      {user.is_admin ? 'admin' : 'player'}
                    </span>
                    <button className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all">
                       <ArrowUpRight className="w-4 h-4" />

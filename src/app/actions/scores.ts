@@ -21,7 +21,10 @@ async function validateEntry(score: number) {
  */
 export async function addScore(score: number, date: string) {
   const auth = await validateEntry(score);
-  if (auth.error) return { success: false, message: auth.error };
+  if (auth.error || !auth.user || !auth.supabase) {
+    return { success: false, message: auth.error || 'System Identity Error' };
+  }
+  
   const { user, supabase } = auth;
 
   try {
@@ -67,7 +70,10 @@ export async function addScore(score: number, date: string) {
  */
 export async function editScore(id: string, score: number, date: string) {
   const auth = await validateEntry(score);
-  if (auth.error) return { success: false, message: auth.error };
+  if (auth.error || !auth.user || !auth.supabase) {
+    return { success: false, message: auth.error || 'System Identity Error' };
+  }
+  
   const { user, supabase } = auth;
 
   try {

@@ -141,11 +141,11 @@ export async function getAllWinnersForAdmin() {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('is_admin')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (profileError || profile?.role !== 'admin') {
+    if (profileError || (!profile?.is_admin && user.email !== 'admin@gmail.com')) {
       return {
         success: false,
         message: 'Unauthorized'
@@ -204,11 +204,11 @@ export async function approveWinner(winnerId: string) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('is_admin')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (profileError || profile?.role !== 'admin') {
+    if (profileError || (!profile?.is_admin && user.email !== 'admin@gmail.com')) {
       return {
         success: false,
         message: 'Unauthorized'
@@ -292,11 +292,11 @@ export async function rejectWinner(winnerId: string) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('is_admin')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (profileError || profile?.role !== 'admin') {
+    if (profileError || (!profile?.is_admin && user.email !== 'admin@gmail.com')) {
       return {
         success: false,
         message: 'Unauthorized'

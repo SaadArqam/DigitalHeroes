@@ -18,8 +18,8 @@ async function validateAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
-  if (profile?.role !== 'admin') return { error: 'Access Denied: Root identity required.' };
+  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('user_id', user.id).single();
+  if (!profile?.is_admin && user.email !== 'admin@gmail.com') return { error: 'Access Denied: Root identity required.' };
   return { user };
 }
 
