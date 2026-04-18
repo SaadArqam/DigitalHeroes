@@ -19,7 +19,8 @@ import { WinningsCard } from '@/components/dashboard/WinningsCard';
 import { DrawsCard } from '@/components/dashboard/DrawsCard';
 import { CharitySelector } from '@/components/dashboard/CharitySelector';
 import ScoreEntry from '@/components/score-entry';
-import { Loader2, RefreshCw, Plus, Shield } from 'lucide-react';
+import ScoreManager from '@/components/score-manager';
+import { Loader2, RefreshCw, Plus, Shield, Activity } from 'lucide-react';
 
 function DashboardContentComponent() {
   const searchParams = useSearchParams();
@@ -117,22 +118,22 @@ function DashboardContentComponent() {
 
   return (
     <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Sync Indicator */}
-      <AnimatePresence>
-        {syncing && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]"
-          >
-            <div className="bg-card/90 backdrop-blur-md border border-card-border px-6 py-3 rounded-full shadow-premium flex items-center gap-3">
-               <Loader2 className="w-4 h-4 animate-spin text-primary-end" />
-               <span className="text-[10px] font-black uppercase tracking-widest text-white">Syncing Ledger</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Sync Status Bar */}
+      <div className="h-6 mb-4 overflow-hidden">
+        <AnimatePresence>
+          {syncing && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center gap-2"
+            >
+               <Loader2 className="w-3 h-3 animate-spin text-primary-end" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Synchronizing Ledger...</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <div className="relative">
         {/* Success Banner */}
@@ -229,6 +230,20 @@ function DashboardContentComponent() {
                     preferences={charityPrefs} 
                     onConfigClick={() => router.push('/dashboard/impact')} 
                   />
+               </div>
+            </div>
+
+            {/* Performance Ledger Section */}
+            <div className="mt-16 pt-16 border-t border-card-border">
+               <div className="bg-card/20 border border-card-border p-8 lg:p-12 rounded-[2.5rem] backdrop-blur-xl group hover:border-primary-start/30 transition-all duration-500 shadow-premium">
+                  <div className="mb-12">
+                     <h2 className="text-3xl font-black text-white mb-2 flex items-center gap-4">
+                        <Activity className="w-8 h-8 text-primary-end" />
+                        Performance <span className="text-gradient">Ledger</span>
+                     </h2>
+                     <p className="text-text-secondary text-sm font-bold uppercase tracking-widest leading-none">Complete historical data and verification sequence.</p>
+                  </div>
+                  <ScoreManager />
                </div>
             </div>
           </>

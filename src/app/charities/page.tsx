@@ -6,7 +6,6 @@ import { Charity } from '@/lib/types';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Heart, Sparkles, ArrowRight, Loader2, Globe } from 'lucide-react';
-import Navbar from '@/components/navbar';
 import { PageContainer } from '@/components/ui/page-container';
 
 export default function CharitiesPage() {
@@ -30,7 +29,6 @@ export default function CharitiesPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-100">
-      <Navbar />
       
       <PageContainer className="pt-24 pb-20">
         <div className="max-w-7xl mx-auto">

@@ -7,7 +7,6 @@ import { monthlyPlan, yearlyPlan, formatPrice } from '@/lib/pricing';
 import PricingCard from '@/components/pricing/PricingCard';
 import PricingComparison from '@/components/pricing/PricingComparison';
 import TrustBadges from '@/components/pricing/TrustBadges';
-import Navbar from '@/components/navbar';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,6 @@ function SubscribePageContent() {
   if (subscription?.status === 'active') {
     return (
       <PageContainer className="flex items-center justify-center">
-        <Navbar />
         <Card variant="glass" className="w-full max-w-xl">
           <CardHeader className="text-center">
             <div className="w-20 h-20 bg-emerald-500 rounded-2xl mx-auto mb-8 flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -107,7 +105,6 @@ function SubscribePageContent() {
 
   return (
     <PageContainer>
-      <Navbar />
       
       <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-24">
         {/* Header */}

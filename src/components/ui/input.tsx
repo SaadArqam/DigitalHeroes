@@ -51,11 +51,11 @@ export function Input({
           disabled={disabled}
           placeholder={placeholder}
           className={`
-            w-full bg-input-bg border-2 border-input-border text-white placeholder:text-text-muted
+            w-full bg-background border-2 border-card-border text-white placeholder:text-text-muted
             rounded-2xl py-4 transition-all duration-200
             ${icon ? 'pl-12' : 'pl-5'} pr-5
             focus:outline-none focus:border-primary-start/50 focus:ring-4 focus:ring-primary-start/10
-            group-hover:border-input-border/80
+            group-hover:border-card-border/80
             font-bold text-sm
           `}
         />

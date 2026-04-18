@@ -55,11 +55,11 @@ export function Navbar() {
     }
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('is_admin, role')
       .eq('user_id', userId)
       .maybeSingle();
     
-    if (profile?.is_admin) setIsAdmin(true);
+    if (profile?.is_admin || profile?.role === 'admin') setIsAdmin(true);
   }
 
   const handleLogout = async () => {
@@ -92,7 +92,7 @@ export function Navbar() {
 
   return (
     <nav 
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
+      className={`sticky top-0 left-0 right-0 z-[100] transition-all duration-500 ${
         isScrolled 
           ? 'py-4 px-6 md:px-12' 
           : 'py-8 px-6 md:px-16'

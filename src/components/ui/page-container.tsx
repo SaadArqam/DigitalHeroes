@@ -17,7 +17,7 @@ export function PageContainer({ children, className = '' }: PageContainerProps) 
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-primary-end/10 rounded-full blur-[120px]" />
       </div>
 
-      <main className={`max-w-7xl mx-auto px-6 lg:px-12 py-32 relative z-10 ${className}`}>
+      <main className={`max-w-7xl mx-auto px-6 py-8 relative z-10 ${className}`}>
         {children}
       </main>
     </div>

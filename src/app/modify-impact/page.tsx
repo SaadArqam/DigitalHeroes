@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { getUserCharityPreference, saveCharityPreference } from '@/app/actions/charities';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Heart, ShieldCheck, Sparkles, AlertCircle, Save, Loader2, RefreshCw, Globe } from 'lucide-react';
-import Navbar from '@/components/navbar';
 import { PageContainer } from '@/components/ui/page-container';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -47,8 +46,7 @@ export default function ModifyImpactPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-100">
-      <Navbar />
-      
+            
       <PageContainer className="pt-24 pb-20">
          <div className="max-w-4xl mx-auto px-4">
             <header className="mb-16">

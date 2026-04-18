@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import Navbar from '@/components/navbar';
 import { PageContainer } from '@/components/ui/page-container';
 import Link from 'next/link';
 
@@ -56,7 +55,6 @@ export default function VerificationPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <Navbar />
       
       <PageContainer className="pt-24 pb-20">
          <div className="max-w-4xl mx-auto px-4">

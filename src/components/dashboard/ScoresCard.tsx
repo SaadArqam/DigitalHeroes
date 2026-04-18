@@ -58,7 +58,7 @@ export function ScoresCard({ scores, onAddClick, onEditClick, onDeleteClick }: S
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-           <div className="p-4 rounded-3xl bg-input-bg border border-input-border flex items-center gap-4">
+           <div className="p-4 rounded-3xl bg-background border border-card-border flex items-center gap-4">
               <div className="p-2 bg-card rounded-xl shadow-sm">
                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
               </div>
@@ -67,7 +67,7 @@ export function ScoresCard({ scores, onAddClick, onEditClick, onDeleteClick }: S
                 <p className="text-xl font-black text-white leading-none">{best ?? '--'}</p>
               </div>
            </div>
-           <div className="p-4 rounded-3xl bg-input-bg border border-input-border flex items-center gap-4">
+           <div className="p-4 rounded-3xl bg-background border border-card-border flex items-center gap-4">
               <div className="p-2 bg-card rounded-xl shadow-sm">
                  <Activity className="w-4 h-4 text-primary-end" />
               </div>
@@ -96,7 +96,7 @@ export function ScoresCard({ scores, onAddClick, onEditClick, onDeleteClick }: S
                        w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black transition-all
                        ${score.score === best 
                          ? 'bg-primary-gradient text-white shadow-glow' 
-                         : 'bg-input-bg text-white border border-input-border'
+                         : 'bg-background text-white border border-card-border'
                        }
                      `}>
                         <span className="text-lg leading-none">{score.score}</span>

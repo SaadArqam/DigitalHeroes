@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { CharitySelector } from '@/components/dashboard/CharitySelector';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Sparkles, ShieldCheck, Globe } from 'lucide-react';
-import Navbar from '@/components/navbar';
 import { PageContainer } from '@/components/ui/page-container';
 
 export default function ImpactPage() {
@@ -12,7 +11,6 @@ export default function ImpactPage() {
 
   return (
     <PageContainer>
-      <Navbar />
       
       <div className="max-w-7xl mx-auto pt-12">
         {/* Navigation & Breadcrumbs */}

@@ -6,7 +6,6 @@ import { getCharityById, saveCharityPreference, getUserCharityPreference } from 
 import { Charity } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Heart, Sparkles, AlertCircle, Save, Loader2 } from 'lucide-react';
-import Navbar from '@/components/navbar';
 import { PageContainer } from '@/components/ui/page-container';
 import { Button } from '@/components/ui/button';
 
@@ -60,7 +59,6 @@ export default function CharityDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-100">
-      <Navbar />
       
       <PageContainer className="pt-24 pb-20">
          <div className="max-w-5xl mx-auto px-4">

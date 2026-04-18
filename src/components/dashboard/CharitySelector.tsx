@@ -127,7 +127,7 @@ export function CharitySelector({ onComplete }: CharitySelectorProps) {
                 </div>
               )}
               
-              <div className="aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-6 bg-input-bg relative border border-input-border">
+              <div className="aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-6 bg-background relative border border-card-border">
                  {charity.image_url ? (
                    <img src={charity.image_url} alt={charity.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                  ) : (

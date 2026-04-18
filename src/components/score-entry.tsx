@@ -67,7 +67,7 @@ export default function ScoreEntry({
     <div className="w-full max-w-lg mx-auto space-y-8">
       {/* Visual Analytics Preview */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 bg-input-bg rounded-[2rem] border border-input-border">
+        <div className="p-4 bg-background rounded-[2rem] border border-card-border">
            <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-primary-start/10 rounded-lg">
                 <TrendingUp className="w-4 h-4 text-primary-start" />
@@ -81,7 +81,7 @@ export default function ScoreEntry({
              }
            </p>
         </div>
-        <div className="p-4 bg-input-bg rounded-[2rem] border border-input-border">
+        <div className="p-4 bg-background rounded-[2rem] border border-card-border">
            <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-emerald-500/10 rounded-lg">
                 <History className="w-4 h-4 text-emerald-500" />
@@ -135,7 +135,7 @@ export default function ScoreEntry({
         <h4 className="font-black text-text-muted uppercase tracking-[0.2em] text-[10px] mb-4">Chronological Registry</h4>
         <div className="space-y-3">
           {recentScores.slice(0, 3).map((rs) => (
-             <div key={rs.id} className="flex items-center justify-between p-4 bg-input-bg/50 rounded-2xl border border-input-border/30">
+             <div key={rs.id} className="flex items-center justify-between p-4 bg-background/50 rounded-2xl border border-card-border/30">
                <div className="flex gap-4 items-center">
                  <div className="w-10 h-10 rounded-xl bg-card border border-card-border flex items-center justify-center font-black text-white shadow-sm">
                    {rs.score}
@@ -148,7 +148,7 @@ export default function ScoreEntry({
              </div>
           ))}
           {recentScores.length === 0 && (
-            <div className="py-8 text-center bg-input-bg/20 rounded-3xl border border-dashed border-input-border">
+            <div className="py-8 text-center bg-background/20 rounded-3xl border border-dashed border-card-border">
               <p className="text-text-muted text-xs font-bold">Awaiting primary data upload...</p>
             </div>
           )}
