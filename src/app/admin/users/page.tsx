@@ -77,9 +77,9 @@ export default function AdminUsersPage() {
         </div>
       </header>
 
-      <Card variant="glass" className="overflow-hidden bg-[#0c0c12] border-slate-800 shadow-2xl rounded-[3rem]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
+      <Card variant="glass" className="overflow-hidden bg-[#0c0c12] border-slate-800 shadow-2xl rounded-[3rem] isolate">
+        <div className="overflow-x-auto safari-scroll-fix">
+          <table className="w-full text-left border-separate border-spacing-0">
             <thead>
               <tr className="border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                 <th className="px-8 py-6">Identity</th>

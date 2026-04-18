@@ -18,7 +18,7 @@ export function Card({
 }: CardProps) {
   const variants = {
     default: "bg-card border-card-border",
-    glass: "glass-card",
+    glass: "glass-card safari-blur-fix",
     outline: "bg-transparent border-2 border-card-border",
   };
 
@@ -26,7 +26,7 @@ export function Card({
     <motion.div
       whileHover={hoverable ? { y: -5, scale: 1.01 } : {}}
       className={`
-        rounded-[2.5rem] border p-8 shadow-premium transition-all duration-300
+        rounded-[2.5rem] border p-8 shadow-premium transition-all duration-300 isolate
         ${variants[variant]} ${className}
       `}
     >

@@ -23,11 +23,18 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-text-primary);
     font-family: var(--font-inter);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -39,12 +46,27 @@
   .text-gradient {
     background: linear-gradient(135deg, var(--color-primary-start) 0%, var(--color-primary-end) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
+    display: inline-block; /* Safari text-clip fix */
   }
 
   .glass-card {
     background: rgba(17, 24, 39, 0.7);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Safari Border Radius Fix */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
   }
+
+  .safari-blur-fix {
+     -webkit-backdrop-filter: blur(12px);
+     backdrop-filter: blur(12px);
+  }
+}
+
+/* Global Safari Backdrop Filter Prefixing */
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: blur(var(--tw-backdrop-blur, 0));
 }

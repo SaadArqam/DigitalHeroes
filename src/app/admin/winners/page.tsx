@@ -84,11 +84,11 @@ export default function AdminWinnersPage() {
         <p className="text-slate-500 font-bold mt-2 uppercase text-[10px] tracking-widest">{winners.length} Claims Protocolled</p>
       </header>
 
-      <Card variant="glass" className="overflow-hidden bg-[#0c0c12] border-slate-800 shadow-2xl rounded-[3rem]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
+      <Card variant="glass" className="overflow-hidden bg-[#0c0c12] border-slate-800 shadow-2xl rounded-[3rem] isolate">
+        <div className="overflow-x-auto safari-scroll-fix">
+          <table className="w-full text-left border-separate border-spacing-0">
             <thead>
-              <tr className="border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+              <tr className="border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] bg-slate-900/50">
                 <th className="px-8 py-6">Identity</th>
                 <th className="px-8 py-6">Cycle</th>
                 <th className="px-8 py-6">Victory Node</th>
