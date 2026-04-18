@@ -1,426 +1,210 @@
 import { createClient } from '@/lib/supabase/server';
-import { Draw, DrawConfig, DrawExecution, DrawResult, UserScore, ScoreFrequency, DrawNumber } from '@/lib/types';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
+
+// --- Types ---
+
+export type UserScore = {
+  userId: string;
+  scores: number[];
+};
+
+export type DrawResult = {
+  userId: string;
+  matchCount: 3 | 4 | 5;
+  prizeAmount: number;
+  status?: string;
+};
+
+export type DrawOutput = {
+  drawNumbers: number[];
+  winners: DrawResult[];
+  totalPool: number;
+  jackpotRollover: number;
+};
+
+// --- Engine Service ---
+
+const TIER_ALLOCATIONS = {
+  5: 0.40, // Jackpot
+  4: 0.35, 
+  3: 0.25
+};
 
 export class DrawEngine {
-  private async getSupabase() {
-    return await createClient();
+  /**
+   * Generates 5 unique random numbers between 1-45.
+   */
+  static generateRandomNumbers(): number[] {
+    const nums = new Set<number>();
+    while (nums.size < 5) {
+      nums.add(Math.floor(Math.random() * 45) + 1);
+    }
+    return Array.from(nums).sort((a, b) => a - b);
   }
 
   /**
-   * Run a complete draw with specified configuration
+   * Weight selection toward most frequent scores across the player base.
    */
-  async runDraw(drawId: string, config: DrawConfig): Promise<DrawExecution> {
-    try {
-      // Validate draw configuration
-      const validatedConfig = this.validateConfig(config);
-      
-      // Fetch all active subscribers with their scores
-      const userScores = await this.fetchActiveUserScores();
-      
-      // Generate draw numbers based on mode
-      const drawNumbers = this.generateDrawNumbers(validatedConfig.mode, userScores);
-      
-      // Calculate score frequencies for algorithmic mode
-      const scoreFrequencies = this.calculateScoreFrequencies(userScores);
-      
-      // Match scores against draw numbers
-      const results = this.matchScores(userScores, drawNumbers);
-      
-      // Calculate prizes and handle jackpot
-      const { totalPrizePool, jackpotRollover } = this.calculatePrizes(results, validatedConfig);
-      
-      // Create draw record
-      const draw = await this.createDrawRecord(drawId, drawNumbers, validatedConfig, totalPrizePool, jackpotRollover);
-      
-      // Insert draw results
-      const savedResults = await this.insertDrawResults(draw.id, results);
-      
-      // Calculate statistics
-      const statistics = this.calculateStatistics(userScores, results, totalPrizePool, jackpotRollover);
-      
-      // Update draw status to completed
-      if (!validatedConfig.simulation) {
-        await this.updateDrawStatus(draw.id, 'completed');
-      }
-      
-      return {
-        draw,
-        results: savedResults,
-        statistics
-      };
+  static generateAlgorithmicNumbers(allScores: UserScore[]): number[] {
+    const frequencies: Record<number, number> = {};
+    allScores.forEach(us => {
+      us.scores.forEach(s => {
+        frequencies[s] = (frequencies[s] || 0) + 1;
+      });
+    });
 
-    } catch (error) {
-      console.error('Draw execution error:', error);
-      throw new Error(`Draw execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const pool: number[] = [];
+    for (let i = 1; i <= 45; i++) {
+        const weight = (frequencies[i] || 0) + 1; // Base weight of 1
+        for (let j = 0; j < weight; j++) pool.push(i);
     }
+
+    const nums = new Set<number>();
+    while (nums.size < 5) {
+      const idx = Math.floor(Math.random() * pool.length);
+      nums.add(pool[idx]);
+    }
+    return Array.from(nums).sort((a, b) => a - b);
   }
 
   /**
-   * Validate draw configuration
+   * Calculates the number of matches between user scores and draw numbers.
    */
-  private validateConfig(config: DrawConfig): DrawConfig {
-    return {
-      mode: config.mode,
-      simulation: config.simulation || false,
-      jackpot_percentage: config.jackpot_percentage || 40,
-      three_match_percentage: config.three_match_percentage || 25,
-      four_match_percentage: config.four_match_percentage || 35,
-      five_match_percentage: config.five_match_percentage || 40
-    };
+  static matchScores(userScores: number[], drawNumbers: number[]): number {
+    const matches = userScores.filter(s => drawNumbers.includes(s)).length;
+    return matches >= 3 ? matches : 0;
   }
 
   /**
-   * Fetch all active subscribers with their 5 latest scores
+   * Distributes the pool among winners according to prize tiers.
    */
-  private async fetchActiveUserScores(): Promise<UserScore[]> {
-    const supabase = await this.getSupabase();
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+  static calculatePrizes(winners: DrawResult[], totalPool: number, currentJackpot: number): { winners: DrawResult[], rollover: number } {
+    const poolWithJackpot = totalPool + currentJackpot;
     
-    if (authError || !authData) {
-      throw new Error('Authentication required');
-    }
+    // Group winners by tier
+    const tiers: Record<number, DrawResult[]> = { 3: [], 4: [], 5: [] };
+    winners.forEach(w => tiers[w.matchCount].push(w));
 
-    // Get all active subscribers
-    const { data: subscriptions, error: subError } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('status', 'active');
+    let rollover = 0;
+    const finalWinners: DrawResult[] = [];
 
-    if (subError) {
-      throw new Error('Failed to fetch active subscribers');
-    }
+    // Process Tiers
+    [5, 4, 3].forEach(matchCount => {
+      const tierWinners = tiers[matchCount];
+      const allocation = (matchCount === 5) 
+        ? poolWithJackpot * TIER_ALLOCATIONS[5] 
+        : totalPool * TIER_ALLOCATIONS[matchCount as 3|4];
 
-    if (!subscriptions || subscriptions.length === 0) {
-      return [];
-    }
-
-    const userIds = subscriptions.map(sub => sub.user_id);
-
-    // Fetch 5 latest scores for each user
-    const allScores: UserScore[] = [];
-    
-    for (const userId of userIds) {
-      const { data: scores, error: scoreError } = await supabase
-        .from('scores')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .limit(5);
-
-      if (scoreError) {
-        console.error(`Failed to fetch scores for user ${userId}:`, scoreError);
-        continue;
-      }
-
-      if (scores) {
-        allScores.push(...scores.map(score => ({
-          id: score.id,
-          user_id: score.user_id,
-          score: score.score,
-          date: score.date,
-          created_at: score.created_at
-        })));
-      }
-    }
-
-    return allScores;
-  }
-
-  /**
-   * Generate 5 draw numbers based on mode
-   */
-  private generateDrawNumbers(mode: 'random' | 'algorithmic', userScores: UserScore[]): number[] {
-    const drawNumbers: number[] = [];
-    
-    if (mode === 'random') {
-      // Pure random generation (1-45)
-      const availableNumbers = Array.from({ length: 45 }, (_, i) => i + 1);
-      
-      for (let i = 0; i < 5; i++) {
-        const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-        const selectedNumber = availableNumbers.splice(randomIndex, 1)[0];
-        drawNumbers.push(selectedNumber);
-      }
-      
-      return drawNumbers.sort((a, b) => a - b);
-    } else {
-      // Algorithmic mode - weighted by score frequency
-      const scoreFrequencies = this.calculateScoreFrequencies(userScores);
-      const weightedNumbers: DrawNumber[] = [];
-      
-      // Create weighted pool based on frequency
-      for (const [score, frequency] of Object.entries(scoreFrequencies)) {
-        for (let i = 0; i < frequency; i++) {
-          weightedNumbers.push({
-            number: parseInt(score),
-            frequency
-          });
-        }
-      }
-      
-      // Sort by frequency (less frequent = higher weight)
-      weightedNumbers.sort((a, b) => a.frequency - b.frequency);
-      
-      // Select 5 numbers from weighted pool
-      const selectedNumbers: number[] = [];
-      const usedNumbers = new Set<number>();
-      
-      for (let i = 0; i < 5; i++) {
-        // Find the highest weighted number not yet used
-        let bestNumber: DrawNumber | null = null;
-        
-        for (const weightedNum of weightedNumbers) {
-          if (!usedNumbers.has(weightedNum.number)) {
-            if (!bestNumber || weightedNum.frequency < bestNumber.frequency) {
-              bestNumber = weightedNum;
-            }
-          }
-        }
-        
-        if (bestNumber) {
-          selectedNumbers.push(bestNumber.number);
-          usedNumbers.add(bestNumber.number);
-        }
-      }
-      
-      return selectedNumbers.sort((a, b) => a - b);
-    }
-  }
-
-  /**
-   * Calculate score frequencies across all users
-   */
-  private calculateScoreFrequencies(userScores: UserScore[]): ScoreFrequency {
-    const frequencies: ScoreFrequency = {};
-    
-    for (const userScore of userScores) {
-      const score = userScore.score;
-      frequencies[score] = (frequencies[score] || 0) + 1;
-    }
-    
-    return frequencies;
-  }
-
-  /**
-   * Match user scores against draw numbers
-   */
-  private matchScores(userScores: UserScore[], drawNumbers: number[]): DrawResult[] {
-    const results: DrawResult[] = [];
-    
-    for (const userScore of userScores) {
-      let matchCount = 0;
-      
-      // Check each user score against draw numbers
-      for (const score of userScores.filter(s => s.user_id === userScore.user_id)) {
-        if (drawNumbers.includes(score.score)) {
-          matchCount++;
-        }
-      }
-      
-      // Only users with 3, 4, or 5 matches qualify
-      if (matchCount >= 3 && matchCount <= 5) {
-        results.push({
-          id: crypto.randomUUID(),
-          draw_id: '', // Will be set after draw creation
-          user_id: userScore.user_id,
-          match_count: matchCount as 3 | 4 | 5,
-          prize_amount: 0, // Will be calculated based on prize pool
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+      if (tierWinners.length > 0) {
+        const prizePerWinner = parseFloat((allocation / tierWinners.length).toFixed(2));
+        tierWinners.forEach(tw => {
+          finalWinners.push({ ...tw, prizeAmount: prizePerWinner });
         });
+      } else if (matchCount === 5) {
+        rollover = allocation;
       }
-    }
-    
-    return results;
+    });
+
+    return { winners: finalWinners, rollover };
   }
 
   /**
-   * Calculate prize amounts and handle jackpot rollover
+   * Simulates a draw for validation without database writes.
    */
-  private calculatePrizes(results: DrawResult[], config: DrawConfig): { totalPrizePool: number; jackpotRollover: number } {
-    const winnersByTier = {
-      3: results.filter(r => r.match_count === 3),
-      4: results.filter(r => r.match_count === 4),
-      5: results.filter(r => r.match_count === 5)
-    };
-
-    const totalWinners = results.length;
-    const jackpotPercentage = config.jackpot_percentage || 40;
-    const threeMatchPercentage = config.three_match_percentage || 25;
-    const fourMatchPercentage = config.four_match_percentage || 35;
-    const fiveMatchPercentage = config.five_match_percentage || 40;
-
-    // Calculate remaining pool after jackpot allocation
-    const jackpotAmount = 100 * jackpotPercentage / 100;
-    const remainingPool = 100 - jackpotAmount;
-
-    // Calculate prize amounts for each tier
-    const prizes = {
-      3: remainingPool * threeMatchPercentage / 100,
-      4: remainingPool * fourMatchPercentage / 100,
-      5: remainingPool * fiveMatchPercentage / 100
-    };
-
-    // Split prizes equally among winners in each tier
-    const totalPrizePool = Object.values(prizes).reduce((sum, prize) => sum + prize, 0);
+  static async simulateDraw(mode: 'random' | 'algorithmic'): Promise<DrawOutput> {
+    const supabase = await createClient();
     
-    // Calculate rollover (40% of jackpot if no 5-match winners)
-    const hasFiveMatchWinner = winnersByTier[5].length > 0;
-    const jackpotRollover = hasFiveMatchWinner ? 0 : jackpotAmount;
+    // Fetch Data
+    const { data: subs } = await supabase.from('subscriptions').select('user_id').eq('status', 'active');
+    const { data: scores } = await supabase.from('scores').select('user_id, score').order('date', { ascending: false });
 
-    // Update prize amounts in results
-    for (const result of results) {
-      const tierPrize = prizes[result.match_count];
-      const winnersInTier = winnersByTier[result.match_count];
-      
-      if (winnersInTier.length > 0) {
-        result.prize_amount = tierPrize / winnersInTier.length;
-      }
-    }
+    // Aggregate User Scores (latest 5 per user)
+    const userMap = new Map<string, number[]>();
+    (scores || []).forEach(s => {
+      if (!userMap.has(s.user_id)) userMap.set(s.user_id, []);
+      const current = userMap.get(s.user_id)!;
+      if (current.length < 5) current.push(s.score);
+    });
 
-    return {
-      totalPrizePool,
-      jackpotRollover
-    };
-  }
+    const activeUserScores: UserScore[] = (subs || []).map(sub => ({
+      userId: sub.user_id,
+      scores: userMap.get(sub.user_id) || []
+    }));
 
-  /**
-   * Create draw record in database
-   */
-  private async createDrawRecord(
-    drawId: string, 
-    drawNumbers: number[], 
-    config: DrawConfig, 
-    totalPrizePool: number, 
-    jackpotRollover: number
-  ): Promise<Draw> {
-    
-    // Get previous rollover amount
-    const supabase = await this.getSupabase();
-    const { data: lastDraw, error: lastDrawError } = await supabase
-      .from('draws')
-      .select('jackpot_rollover')
-      .eq('status', 'completed')
+    // Generate Numbers
+    const numbers = mode === 'random' 
+      ? this.generateRandomNumbers() 
+      : this.generateAlgorithmicNumbers(activeUserScores);
+
+    // Initial Matching
+    const winners: DrawResult[] = activeUserScores.map(us => {
+      const matchCount = this.matchScores(us.scores, numbers);
+      return matchCount > 0 ? { userId: us.userId, matchCount: matchCount as any, prizeAmount: 0 } : null;
+    }).filter(Boolean) as DrawResult[];
+
+    // Calculate Prizes (Estimation based on latest active draw pool)
+    const { data: latestDraw } = await supabase.from('draws')
+      .select('total_pool, jackpot_rollover')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    const previousRollover = lastDrawError ? 0 : (lastDraw?.jackpot_rollover || 0);
-    const newRollover = previousRollover + jackpotRollover;
+    const pool = latestDraw?.total_pool || 1000;
+    const jackpot = latestDraw?.jackpot_rollover || 0;
 
-    const { data: draw, error } = await supabase
-      .from('draws')
-      .insert({
-        id: drawId,
-        month: new Date().toISOString().slice(0, 7), // YYYY-MM format
-        draw_numbers: drawNumbers,
-        mode: config.mode,
-        status: 'active',
-        jackpot_rollover: newRollover,
-        total_pool: totalPrizePool,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to create draw record: ${error.message}`);
-    }
-
-    return draw!;
-  }
-
-  /**
-   * Insert draw results into database
-   */
-  private async insertDrawResults(drawId: string, results: DrawResult[]): Promise<DrawResult[]> {
-    const savedResults: DrawResult[] = [];
-    
-    for (const result of results) {
-      result.draw_id = drawId;
-      
-      const supabase = await this.getSupabase();
-      const { data: savedResult, error } = await supabase
-        .from('draw_results')
-        .insert(result)
-        .select()
-        .single();
-
-      if (error) {
-        console.error(`Failed to save draw result for user ${result.user_id}:`, error);
-        continue;
-      }
-
-      if (savedResult) {
-        savedResults.push(savedResult);
-      }
-    }
-    
-    return savedResults;
-  }
-
-  /**
-   * Calculate draw statistics
-   */
-  private calculateStatistics(
-    userScores: UserScore[], 
-    results: DrawResult[], 
-    totalPrizePool: number, 
-    jackpotRollover: number
-  ) {
-    const totalParticipants = new Set(userScores.map(us => us.user_id)).size;
-    
-    const winnersByTier = {
-      3: results.filter(r => r.match_count === 3),
-      4: results.filter(r => r.match_count === 4),
-      5: results.filter(r => r.match_count === 5)
-    };
+    const { winners: processedWinners, rollover } = this.calculatePrizes(winners, pool, jackpot);
 
     return {
-      total_participants: totalParticipants,
-      total_winners: {
-        three_match: winnersByTier[3].length,
-        four_match: winnersByTier[4].length,
-        five_match: winnersByTier[5].length
-      },
-      prize_pool: totalPrizePool,
-      rollover_amount: jackpotRollover
+      drawNumbers: numbers,
+      winners: processedWinners,
+      totalPool: pool,
+      jackpotRollover: rollover
     };
   }
 
   /**
-   * Update draw status to completed
+   * Executes the full draw sequence and commits results to the ledger.
    */
-  private async updateDrawStatus(drawId: string, status: 'active' | 'completed'): Promise<void> {
-    const supabase = await this.getSupabase();
-    const { error } = await supabase
+  static async runDraw(drawId: string, mode: 'random' | 'algorithmic'): Promise<DrawOutput> {
+    // We use service role for bulk operations
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: currentDraw, error: drawFetchError } = await adminSupabase
       .from('draws')
-      .update({ 
-        status,
+      .select('*')
+      .eq('id', drawId)
+      .single();
+
+    if (drawFetchError || !currentDraw) throw new Error('Draw Registry Error');
+
+    const output = await this.simulateDraw(mode);
+
+    // 1. Log Results
+    const resultsToInsert = output.winners.map(w => ({
+      draw_id: drawId,
+      user_id: w.userId,
+      match_count: w.matchCount,
+      prize_amount: w.prizeAmount,
+      status: 'pending'
+    }));
+
+    if (resultsToInsert.length > 0) {
+      await adminSupabase.from('draw_results').insert(resultsToInsert);
+    }
+
+    // 2. Finalize Draw Record
+    await adminSupabase.from('draws')
+      .update({
+        draw_numbers: output.drawNumbers,
+        status: 'completed',
+        jackpot_rollover: output.jackpotRollover,
         updated_at: new Date().toISOString()
       })
       .eq('id', drawId);
 
-    if (error) {
-      console.error(`Failed to update draw status: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get current jackpot rollover amount
-   */
-  async getCurrentJackpotRollover(): Promise<number> {
-    const supabase = await this.getSupabase();
-    const { data: lastDraw, error } = await supabase
-      .from('draws')
-      .select('jackpot_rollover')
-      .eq('status', 'completed')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    return error ? 0 : (lastDraw?.jackpot_rollover || 0);
+    return output;
   }
 }

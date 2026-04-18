@@ -1,103 +1,131 @@
+// src/app/actions/admin.ts
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 
-const getAdminSupabase = () => createAdminClient(
+const adminClient = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-async function checkAdmin() {
+/**
+ * Validates the root identity is an administrator.
+ */
+async function validateAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Not authenticated' };
+  if (!user) return { error: 'Unauthorized' };
 
-  const { data: profile } = await supabase
+  const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
+  if (profile?.role !== 'admin') return { error: 'Access Denied: Root identity required.' };
+  return { user };
+}
+
+export async function getAllUsers() {
+  const auth = await validateAdmin();
+  if (auth.error) throw new Error(auth.error);
+
+  const { data, error } = await adminClient
     .from('profiles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle();
+    .select('*, subscriptions(*), scores(id)')
+    .order('created_at', { ascending: false });
 
-  if (profile?.role !== 'admin') {
-    // Check email fallback for dev/emergency
-    const isAdminEmail = user.email === 'admin@gmail.com' || user.email === 'your@email.com';
-    if (!isAdminEmail) return { error: 'Unauthorized' };
-  }
-
-  return { user, supabase };
+  if (error) throw error;
+  return data;
 }
 
-// --- USER MANAGEMENT ---
-
-export async function updateUserScore(scoreId: string, score: number, date: string) {
-  const auth = await checkAdmin();
+export async function updateSubscriptionStatus(userId: string, status: 'active' | 'lapsed' | 'cancelled') {
+  const auth = await validateAdmin();
   if (auth.error) return { success: false, message: auth.error };
 
-  const adminSupabase = getAdminSupabase();
-  const { error } = await adminSupabase
-    .from('scores')
-    .update({ score, date })
-    .eq('id', scoreId);
+  const { error } = await adminClient
+    .from('subscriptions')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('user_id', userId);
 
   if (error) return { success: false, message: error.message };
-  revalidatePath('/admin');
-  return { success: true, message: 'User score updated' };
+  revalidatePath('/admin/users');
+  return { success: true };
 }
 
-// --- CHARITY MANAGEMENT ---
+export async function getAllDraws() {
+  const auth = await validateAdmin();
+  if (auth.error) throw new Error(auth.error);
 
-export async function upsertCharity(charity: any) {
-  const auth = await checkAdmin();
-  if (auth.error) return { success: false, message: auth.error };
+  const { data, error } = await adminClient
+    .from('draws')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  const adminSupabase = getAdminSupabase();
-  const { error } = await adminSupabase
-    .from('charities')
-    .upsert({
-      id: charity.id || undefined,
-      name: charity.name,
-      description: charity.description,
-      logo_url: charity.logo_url,
-      website_url: charity.website_url,
-      is_active: charity.is_active ?? true
-    });
-
-  if (error) return { success: false, message: error.message };
-  revalidatePath('/admin');
-  return { success: true, message: 'Charity saved successfully' };
+  if (error) throw error;
+  return data;
 }
 
-export async function deleteCharity(id: string) {
-  const auth = await checkAdmin();
-  if (auth.error) return { success: false, message: auth.error };
+export async function getAllWinners() {
+  const auth = await validateAdmin();
+  if (auth.error) throw new Error(auth.error);
 
-  const adminSupabase = getAdminSupabase();
-  const { error } = await adminSupabase
-    .from('charities')
-    .delete()
-    .eq('id', id);
-
-  if (error) return { success: false, message: error.message };
-  revalidatePath('/admin');
-  return { success: true, message: 'Charity removed' };
-}
-
-// --- WINNER MANAGEMENT ---
-
-export async function updateWinnerStatus(resultId: string, status: 'verified' | 'rejected' | 'paid') {
-  const auth = await checkAdmin();
-  if (auth.error) return { success: false, message: auth.error };
-
-  const adminSupabase = getAdminSupabase();
-  const { error } = await adminSupabase
+  const { data, error } = await adminClient
     .from('draw_results')
-    .update({ status })
+    .select('*, profiles:user_id(email), draws(month)')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getWinnerProofUrl(filePath: string) {
+  const auth = await validateAdmin();
+  if (auth.error) return null;
+
+  const { data, error } = await adminClient
+    .storage
+    .from('winner-proofs')
+    .createSignedUrl(filePath, 3600); // 1 hour access
+
+  if (error) return null;
+  return data.signedUrl;
+}
+
+export async function updateWinnerStatus(resultId: string, status: string) {
+  const auth = await validateAdmin();
+  if (auth.error) return { success: false, message: auth.error };
+
+  const { error } = await adminClient
+    .from('draw_results')
+    .update({ status, updated_at: new Date().toISOString() })
     .eq('id', resultId);
 
   if (error) return { success: false, message: error.message };
-  revalidatePath('/admin');
-  return { success: true, message: `Winner status updated to ${status}` };
+  revalidatePath('/admin/winners');
+  return { success: true };
+}
+
+export async function upsertCharity(data: any) {
+  const auth = await validateAdmin();
+  if (auth.error) return { success: false, message: auth.error };
+
+  const { error } = await adminClient
+    .from('charities')
+    .upsert({
+      ...data,
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) return { success: false, message: error.message };
+  revalidatePath('/admin/charities');
+  revalidatePath('/charities');
+  return { success: true };
+}
+
+export async function deleteCharity(id: string) {
+  const auth = await validateAdmin();
+  if (auth.error) return { success: false, message: auth.error };
+
+  const { error } = await adminClient.from('charities').delete().eq('id', id);
+  if (error) return { success: false, message: error.message };
+  revalidatePath('/admin/charities');
+  return { success: true };
 }

@@ -1,312 +1,132 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { ScoreSchema, ScoreIdSchema } from '@/lib/validations';
-import { ScoreActionResponse } from '@/lib/types';
-import { checkActiveSubscription } from '@/lib/subscription';
+import { revalidatePath } from 'next/cache';
 
-export async function addScore(score: number, date: string): Promise<ScoreActionResponse> {
+/**
+ * Validates input and session.
+ */
+async function validateEntry(score: number) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Authentication Required' };
+  if (score < 1 || score > 45) return { error: 'Score must be between 1 and 45' };
+
+  return { user, supabase };
+}
+
+/**
+ * Adds a new score. Deletes the oldest if capacity (5) is reached.
+ */
+export async function addScore(score: number, date: string) {
+  const auth = await validateEntry(score);
+  if (auth.error) return { success: false, message: auth.error };
+  const { user, supabase } = auth;
+
   try {
-    // Validate input
-    const validatedData = ScoreSchema.parse({ score, date });
-
-    const supabase = await createClient();
-    const subCheck = await checkActiveSubscription(supabase);
-
-    if (!subCheck.valid) {
-      return {
-        success: false,
-        message: subCheck.reason === 'not_authenticated' 
-          ? 'You must be logged in to add a score' 
-          : 'You must have an active subscription to add a score'
-      };
-    }
-    const { user } = subCheck;
-
-    // Check if score already exists for this date
-    const { data: existingScore, error: checkError } = await supabase
+    // 1. Duplicate check
+    const { data: duplicate } = await supabase
       .from('scores')
-      .select('*')
+      .select('id')
       .eq('user_id', user.id)
-      .eq('date', validatedData.date)
-      .single();
+      .eq('date', date)
+      .maybeSingle();
 
-    if (existingScore) {
-      return {
-        success: false,
-        message: 'A score for this date already exists'
-      };
-    }
+    if (duplicate) return { success: false, message: 'Conflict: An entry already exists for this date.' };
 
-    // Get current scores count
-    const { data: currentScores, error: countError } = await supabase
+    // 2. Rolling Limit Management
+    const { data: existing } = await supabase
       .from('scores')
       .select('id, date')
       .eq('user_id', user.id)
       .order('date', { ascending: false });
 
-    if (countError) {
-      return {
-        success: false,
-        message: 'Error checking existing scores'
-      };
+    if (existing && existing.length >= 5) {
+      const oldest = existing[existing.length - 1];
+      await supabase.from('scores').delete().eq('id', oldest.id);
     }
 
-    // If user already has 5 scores, delete the oldest
-    if (currentScores && currentScores.length >= 5) {
-      const oldestScore = currentScores[currentScores.length - 1];
-      const { error: deleteError } = await supabase
-        .from('scores')
-        .delete()
-        .eq('id', oldestScore.id);
+    // 3. Insert
+    const { error } = await supabase.from('scores').insert({
+      user_id: user.id,
+      score,
+      date
+    });
 
-      if (deleteError) {
-        return {
-          success: false,
-          message: 'Error removing oldest score'
-        };
-      }
-    }
-
-    // Add the new score
-    const { data: newScore, error: insertError } = await supabase
-      .from('scores')
-      .insert({
-        user_id: user.id,
-        score: validatedData.score,
-        date: validatedData.date
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      return {
-        success: false,
-        message: 'Error adding score'
-      };
-    }
-
-    return {
-      success: true,
-      message: currentScores && currentScores.length >= 5 
-        ? 'Score added successfully. Oldest score removed to maintain limit of 5 scores.'
-        : 'Score added successfully',
-      data: newScore
-    };
-
-  } catch (error) {
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred'
-    };
+    if (error) throw error;
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'System error' };
   }
 }
 
-export async function editScore(id: string, score: number, date: string): Promise<ScoreActionResponse> {
+/**
+ * Updates a record with conflict validation.
+ */
+export async function editScore(id: string, score: number, date: string) {
+  const auth = await validateEntry(score);
+  if (auth.error) return { success: false, message: auth.error };
+  const { user, supabase } = auth;
+
   try {
-    // Validate input
-    const validatedId = ScoreIdSchema.parse({ id });
-    const validatedData = ScoreSchema.parse({ score, date });
-
-    const supabase = await createClient();
-    const subCheck = await checkActiveSubscription(supabase);
-
-    if (!subCheck.valid) {
-      return {
-        success: false,
-        message: subCheck.reason === 'not_authenticated' 
-          ? 'You must be logged in to edit a score' 
-          : 'You must have an active subscription to edit a score'
-      };
-    }
-    const { user } = subCheck;
-
-    // Check if score exists and belongs to user
-    const { data: existingScore, error: fetchError } = await supabase
+    const { data: conflict } = await supabase
       .from('scores')
-      .select('*')
-      .eq('id', validatedId.id)
+      .select('id')
       .eq('user_id', user.id)
-      .single();
+      .eq('date', date)
+      .neq('id', id)
+      .maybeSingle();
 
-    if (fetchError || !existingScore) {
-      return {
-        success: false,
-        message: 'Score not found or you do not have permission to edit it'
-      };
-    }
+    if (conflict) return { success: false, message: 'Date Conflict: Another score exists for this date.' };
 
-    // Check if another score exists for this date (excluding current score)
-    const { data: duplicateScore, error: duplicateError } = await supabase
+    const { error } = await supabase
       .from('scores')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('date', validatedData.date)
-      .neq('id', validatedId.id)
-      .single();
-
-    if (duplicateScore) {
-      return {
-        success: false,
-        message: 'A score for this date already exists'
-      };
-    }
-
-    // Update the score
-    const { data: updatedScore, error: updateError } = await supabase
-      .from('scores')
-      .update({
-        score: validatedData.score,
-        date: validatedData.date
-      })
-      .eq('id', validatedId.id)
-      .eq('user_id', user.id)
-      .select()
-      .single();
-
-    if (updateError) {
-      return {
-        success: false,
-        message: 'Error updating score'
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Score updated successfully',
-      data: updatedScore
-    };
-
-  } catch (error) {
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred'
-    };
-  }
-}
-
-export async function deleteScore(id: string): Promise<ScoreActionResponse> {
-  try {
-    // Validate input
-    const validatedId = ScoreIdSchema.parse({ id });
-
-    const supabase = await createClient();
-    const subCheck = await checkActiveSubscription(supabase);
-
-    if (!subCheck.valid) {
-      return {
-        success: false,
-        message: subCheck.reason === 'not_authenticated' 
-          ? 'You must be logged in to delete a score' 
-          : 'You must have an active subscription to delete a score'
-      };
-    }
-    const { user } = subCheck;
-
-    // Check if score exists and belongs to user
-    const { data: existingScore, error: fetchError } = await supabase
-      .from('scores')
-      .select('*')
-      .eq('id', validatedId.id)
-      .eq('user_id', user.id)
-      .single();
-
-    if (fetchError || !existingScore) {
-      return {
-        success: false,
-        message: 'Score not found or you do not have permission to delete it'
-      };
-    }
-
-    // Delete the score
-    const { error: deleteError } = await supabase
-      .from('scores')
-      .delete()
-      .eq('id', validatedId.id)
+      .update({ score, date })
+      .eq('id', id)
       .eq('user_id', user.id);
 
-    if (deleteError) {
-      return {
-        success: false,
-        message: 'Error deleting score'
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Score deleted successfully'
-    };
-
-  } catch (error) {
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred'
-    };
+    if (error) throw error;
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Update error' };
   }
 }
 
-export async function getUserScores(): Promise<{ success: boolean; message: string; data?: any[] }> {
+/**
+ * Deletes a player record.
+ */
+export async function deleteScore(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, message: 'Unauthorized' };
+
   try {
-    const supabase = await createClient();
-    const subCheck = await checkActiveSubscription(supabase);
-
-    if (!subCheck.valid) {
-      return {
-        success: false,
-        message: subCheck.reason === 'not_authenticated' 
-          ? 'You must be logged in to view scores' 
-          : 'You must have an active subscription to view scores'
-      };
-    }
-    const { user } = subCheck;
-
-    const { data: scores, error: fetchError } = await supabase
-      .from('scores')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false });
-
-    if (fetchError) {
-      return {
-        success: false,
-        message: 'Error fetching scores'
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Scores fetched successfully',
-      data: scores || []
-    };
-
-  } catch (error) {
-    if (error instanceof Error) {
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-    return {
-      success: false,
-      message: 'An unexpected error occurred'
-    };
+    const { error } = await supabase.from('scores').delete().eq('id', id).eq('user_id', user.id);
+    if (error) throw error;
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Deletion error' };
   }
+}
+
+/**
+ * Fetches user's history (Newest First).
+ */
+export async function getScores() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('scores')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('date', { ascending: false });
+
+  return data || [];
 }
