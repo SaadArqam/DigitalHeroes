@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getUserCharityPreferences, saveCharityPreference } from '@/app/actions/charities';
+import { getUserCharityPreference, saveCharityPreference } from '@/app/actions/charities';
 import { getCharities } from '@/app/actions/charities';
 import { Charity, UserCharityPreference } from '@/lib/types';
 
@@ -43,9 +43,9 @@ export default function CharityPreference({ className = '', onPreferenceUpdated 
 
   const fetchPreferences = async () => {
     try {
-      const result = await getUserCharityPreferences();
+      const result = await getUserCharityPreference();
       if (result.success) {
-        setPreferences(result.data || []);
+        setPreferences(result.data ? [result.data] : []);
         setError('');
       } else {
         setError(result.message ?? 'Unknown error');
@@ -87,7 +87,7 @@ export default function CharityPreference({ className = '', onPreferenceUpdated 
     try {
       const result = await saveCharityPreference(selectedCharity, percentage);
       if (result.success) {
-        setSuccess(result.message);
+        setSuccess(result.message ?? 'Impact preference synchronized.');
         setError('');
         fetchPreferences(); // Refresh preferences
         onPreferenceUpdated?.();

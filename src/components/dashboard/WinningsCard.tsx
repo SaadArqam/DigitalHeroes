@@ -57,7 +57,7 @@ export function WinningsCard({ results }: { results: DrawResult[] }) {
   const animatedPending = useCountUp(pendingTotal);
 
   return (
-    <Card variant="glass" className="h-full group" hoverable>
+    <Card variant="glass" className="h-full group transition-all hover:shadow-lg hover:-translate-y-1">
         {/* Header */}
         <div className="flex items-start justify-between relative z-10 mb-8">
           <div className="flex items-center gap-4">

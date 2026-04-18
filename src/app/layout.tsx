@@ -12,17 +12,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "GreenJack | Elite Performance Terminal",
-  description: "Turn your golf passion into purpose - Play, compete, and support charities",
+  description: "Play, compete, and support charities",
   applicationName: 'GreenJack',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0B0F1A',
+  themeColor: '#0B1220',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -38,12 +33,13 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} h-full antialiased dark`}
       suppressHydrationWarning
-      data-scroll-behavior="smooth"
     >
-      <body className="min-h-full bg-background text-foreground selection:bg-primary-start/30 selection:text-white">
+      <body className="min-h-full bg-[#0B1220] text-white selection:bg-purple-500/30 selection:text-white">
         <ToastProvider>
           <Navbar />
-          {children}
+          <main className="relative z-10">
+            {children}
+          </main>
         </ToastProvider>
       </body>
     </html>

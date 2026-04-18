@@ -1,64 +1,54 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { ReactNode } from 'react';
+import * as React from 'react';
 import { Loader2 } from 'lucide-react';
 
-interface ButtonProps {
-  children: ReactNode;
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  type?: 'button' | 'submit' | 'reset';
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
-  disabled?: boolean;
-  className?: string;
-  icon?: ReactNode;
+  icon?: React.ReactNode;
 }
 
-export function Button({
-  children,
-  onClick,
-  type = 'button',
-  variant = 'primary',
-  size = 'md',
-  isLoading = false,
-  disabled = false,
-  className = '',
-  icon,
-}: ButtonProps) {
-  const baseStyles = "relative inline-flex items-center justify-center font-bold transition-all duration-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0B1220] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group";
-  
-  const variants = {
-    primary: "bg-primary-gradient text-white shadow-glow hover:scale-[1.02] active:scale-[0.98] focus:ring-primary-start",
-    secondary: "bg-card text-white border border-card-border hover:bg-input-bg focus:ring-gray-700",
-    outline: "bg-transparent border border-input-border text-white hover:border-gray-400 focus:ring-gray-700",
-    ghost: "bg-transparent text-text-secondary hover:text-white hover:bg-white/5",
-    danger: "bg-rose-500 text-white hover:bg-rose-600 focus:ring-rose-500",
-  };
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className = '', variant = 'primary', size = 'md', isLoading, icon, children, disabled, ...props }, ref) => {
+    
+    const baseStyles = 'inline-flex items-center justify-center font-black uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer';
+    
+    const variants = {
+      primary: 'bg-gradient-to-br from-[#7C3AED] to-[#3B82F6] text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5',
+      secondary: 'bg-[#1F2937] text-white border border-[#374151] hover:bg-[#374151]',
+      outline: 'bg-transparent border-2 border-[#374151] text-white hover:border-[#7C3AED] hover:text-[#7C3AED]',
+      ghost: 'bg-transparent text-[#94A3B8] hover:text-white hover:bg-white/5',
+      danger: 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white',
+    };
 
-  const sizes = {
-    sm: "px-4 py-2 text-xs",
-    md: "px-6 py-3 text-sm",
-    lg: "px-8 py-4 text-base",
-    icon: "p-2.5",
-  };
+    const sizes = {
+      sm: 'px-4 py-2 text-[10px] rounded-lg',
+      md: 'px-8 py-4 text-xs rounded-xl',
+      lg: 'px-12 py-5 text-sm rounded-2xl',
+      icon: 'p-3 rounded-xl',
+    };
 
-  return (
-    <button
-      type={type}
-      onClick={!disabled && !isLoading ? onClick : undefined}
-      disabled={disabled || isLoading}
-      className={`${baseStyles} ${variants[variant]} ${sizes[variant === 'ghost' && size === 'icon' ? 'icon' : size]} ${className}`}
-    >
-      {isLoading ? (
-        <Loader2 className="w-5 h-5 animate-spin" />
-      ) : (
-        <div className="flex items-center gap-2 relative z-10 font-black tracking-widest uppercase text-[10px]">
-          {icon}
-          {children}
-        </div>
-      )}
-    </button>
-  );
-}
+    return (
+      <button
+        ref={ref}
+        type={props.type || 'button'}
+        disabled={isLoading || disabled}
+        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+        {...props}
+      >
+        {isLoading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <>
+            {icon && <span className={children ? 'mr-3' : ''}>{icon}</span>}
+            {children}
+          </>
+        )}
+      </button>
+    );
+  }
+);
+
+Button.displayName = 'Button';

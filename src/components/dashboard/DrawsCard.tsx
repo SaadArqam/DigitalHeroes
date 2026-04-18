@@ -21,7 +21,7 @@ export function DrawsCard({ latestDraw, userResult, currentPool = 125000 }: Draw
   }, []);
 
   return (
-    <Card variant="default" className="relative h-full overflow-hidden !p-0 border-card-border" hoverable>
+    <Card variant="default" className="relative h-full overflow-hidden !p-0 border-card-border transition-all hover:shadow-lg hover:-translate-y-1">
         {/* Deep Galaxy Gradient */}
         <div className="absolute inset-0 bg-[#0A0D1E]" />
         

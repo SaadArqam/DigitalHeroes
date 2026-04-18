@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCharities, saveCharityPreference, getUserCharityPreferences } from '@/app/actions/charities';
+import { getCharities, saveCharityPreference, getUserCharityPreference } from '@/app/actions/charities';
 import { Charity, UserCharityPreference } from '@/lib/types';
 
 interface CharitySelectorProps {
@@ -47,9 +47,9 @@ export default function CharitySelector({
 
   const fetchUserPreferences = async () => {
     try {
-      const result = await getUserCharityPreferences();
+      const result = await getUserCharityPreference();
       if (result.success) {
-        setUserPreferences(result.data || []);
+        setUserPreferences(result.data ? [result.data] : []);
       }
     } catch (err) {
       console.error('Failed to fetch user preferences:', err);
@@ -80,7 +80,7 @@ export default function CharitySelector({
     try {
       const result = await saveCharityPreference(selectedCharity, percentage);
       if (result.success) {
-        setSuccess(result.message);
+        setSuccess(result.message ?? 'Partner selection verified.');
         setError('');
         setSelectedCharity('');
         setContributionPercentage('10');

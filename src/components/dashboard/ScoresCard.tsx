@@ -33,7 +33,7 @@ export function ScoresCard({ scores, onAddClick, onEditClick, onDeleteClick }: S
   const average = last5.length > 0 ? Math.round(last5.reduce((a, b) => a + b.score, 0) / last5.length) : null;
 
   return (
-    <Card variant="glass" className="h-full flex flex-col overflow-hidden relative group" hoverable>
+    <Card variant="glass" className="h-full flex flex-col overflow-hidden relative group transition-all hover:shadow-lg hover:-translate-y-1">
         {/* Header */}
         <div className="flex items-start justify-between relative z-10 mb-8">
           <div className="flex items-center gap-4">

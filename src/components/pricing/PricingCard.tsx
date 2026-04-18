@@ -16,8 +16,7 @@ export default function PricingCard({ plan, loading, onSubscribe, isPopular }: P
   return (
     <Card 
       variant={isPopular ? 'glass' : 'default'}
-      className={`relative flex flex-col p-8 ${isPopular ? 'border-primary-start/40 shadow-glow' : 'border-card-border'}`}
-      hoverable
+      className={`relative flex flex-col p-8 transition-all hover:shadow-lg hover:-translate-y-1 ${isPopular ? 'border-primary-start/40 shadow-glow' : 'border-card-border'}`}
     >
       {isPopular && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary-gradient px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-2">
