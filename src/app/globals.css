@@ -1,25 +1,32 @@
 @import "tailwindcss";
 
-@theme inline {
-  --font-inter: "Inter", sans-serif;
-  
-  --color-background: #0B1220;
-  --color-card: #111827;
-  --color-card-border: #1F2937;
-  
-  --color-primary-start: #9333ea;
-  --color-primary-end: #3b82f6;
-  
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
-  
-  --color-input-bg: #1F2937;
-  --color-input-border: #374151;
-  --color-input-focus: #4F46E5;
+:root {
+  --background: #0a0a0f;
+  --card: #0e0e15;
+  --card-border: #1a1a25;
+  --primary-start: #7c3aed;
+  --primary-end: #3b82f6;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --input-bg: #12121a;
+  --input-border: #252535;
+}
 
-  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px -5px rgba(147, 51, 234, 0.3);
+@theme {
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-primary-start: var(--primary-start);
+  --color-primary-end: var(--primary-end);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  
+  --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px -10px rgba(124, 58, 237, 0.4);
 }
 
 @layer base {
@@ -29,9 +36,9 @@
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    font-family: var(--font-inter);
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -40,23 +47,22 @@
 
 @layer utilities {
   .bg-primary-gradient {
-    background: linear-gradient(135deg, var(--color-primary-start) 0%, var(--color-primary-end) 100%);
+    background: linear-gradient(135deg, var(--primary-start) 0%, var(--primary-end) 100%);
   }
   
   .text-gradient {
-    background: linear-gradient(135deg, var(--color-primary-start) 0%, var(--color-primary-end) 100%);
+    background: linear-gradient(135deg, var(--primary-start) 0%, var(--primary-end) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    display: inline-block; /* Safari text-clip fix */
+    display: inline-block;
   }
 
   .glass-card {
-    background: rgba(17, 24, 39, 0.7);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    background: rgba(14, 14, 21, 0.6);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    /* Safari Border Radius Fix */
     -webkit-mask-image: -webkit-radial-gradient(white, black);
   }
 
