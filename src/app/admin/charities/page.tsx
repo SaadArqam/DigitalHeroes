@@ -50,7 +50,7 @@ export default function AdminCharitiesPage() {
       resetForm();
       await loadCharities();
     } else {
-      toast(res.message || 'Operation Error', 'error');
+      toast(res.message ?? 'Operation Error', 'error');
     }
     setOpLoading(false);
   };
@@ -186,9 +186,9 @@ export default function AdminCharitiesPage() {
                </div>
                
                <div className="flex-1 space-y-3 mb-8">
-                  <h3 className="text-2xl font-black text-white tracking-tight leading-none group-hover:text-rose-500 transition-colors uppercase">{charity.name}</h3>
+                  <h3 className="text-2xl font-black text-white tracking-tight leading-none group-hover:text-rose-500 transition-colors uppercase">{charity.name ?? 'Mission Identity Unknown'}</h3>
                   <p className="text-xs font-bold text-slate-500 leading-relaxed line-clamp-2 uppercase tracking-tighter">
-                     {charity.description}
+                     {charity.description ?? 'Mission protocol details currently classified.'}
                   </p>
                </div>
 

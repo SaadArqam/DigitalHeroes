@@ -90,7 +90,7 @@ function DashboardContentComponent() {
         toast('Record deleted', 'success');
         syncData();
       } else {
-        toast(res.message, 'error');
+        toast(res.message ?? 'Unknown error', 'error');
       }
     }
   };

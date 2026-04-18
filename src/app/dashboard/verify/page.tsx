@@ -42,7 +42,7 @@ export default function VerificationPage() {
       toast('Verification Matrix Synchronized', 'success');
       await loadWins();
     } else {
-      toast(res.message, 'error');
+      toast(res.message ?? 'Unknown error', 'error');
     }
     setUploading(null);
   };

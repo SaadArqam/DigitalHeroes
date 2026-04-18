@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
       toast('Status Propagated', 'success');
       await loadUsers();
     } else {
-      toast(res.message || 'Update Failed', 'error');
+      toast(res.message ?? 'Update Failed', 'error');
     }
     setActionLoading(null);
   };
@@ -99,7 +99,7 @@ export default function AdminUsersPage() {
                              {user.email?.[0].toUpperCase()}
                           </div>
                           <div className="flex flex-col">
-                             <span className="text-sm font-bold text-white tracking-tight">{user.email}</span>
+                             <span className="text-sm font-bold text-white tracking-tight">{user.email ?? 'Unknown Identity'}</span>
                              <span className="text-[9px] font-black text-primary-end uppercase tracking-widest leading-none mt-1">{user.is_admin ? 'admin' : 'player'}</span>
                           </div>
                        </div>
@@ -107,9 +107,9 @@ export default function AdminUsersPage() {
                     <td className="px-8 py-6">
                        {user.subscriptions?.[0] ? (
                           <div className="flex flex-col">
-                             <span className="text-xs font-black text-white uppercase tracking-widest">{user.subscriptions[0].plan}</span>
+                             <span className="text-xs font-black text-white uppercase tracking-widest">{user.subscriptions[0].plan ?? 'Free'}</span>
                              <span className={`text-[9px] font-black uppercase tracking-widest leading-none mt-1 ${user.subscriptions[0].status === 'active' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                {user.subscriptions[0].status}
+                                {user.subscriptions[0].status ?? 'Inactive'}
                              </span>
                           </div>
                        ) : (

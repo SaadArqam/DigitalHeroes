@@ -106,20 +106,20 @@ export default function AdminWinnersPage() {
                         <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 group-hover:text-white transition-colors">
                            <Mail className="w-4 h-4" />
                         </div>
-                        <span className="text-sm font-bold text-white tracking-tight">{winner.profiles?.email}</span>
+                        <span className="text-sm font-bold text-white tracking-tight">{winner.profiles?.email ?? 'Unknown Citizen'}</span>
                      </div>
                   </td>
                   <td className="px-8 py-8">
                      <div className="flex items-center gap-2 text-slate-400">
                         <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-xs font-black uppercase tracking-tighter">{winner.draws?.month}</span>
+                        <span className="text-xs font-black uppercase tracking-tighter">{winner.draws?.month ?? 'N/A'}</span>
                      </div>
                   </td>
                   <td className="px-8 py-8">
-                     <span className="text-xs font-black text-indigo-400 uppercase tracking-widest leading-none bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10">{winner.match_count}-Match Hit</span>
+                     <span className="text-xs font-black text-indigo-400 uppercase tracking-widest leading-none bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10">{winner.match_count ?? 0}-Match Hit</span>
                   </td>
                   <td className="px-8 py-8">
-                     <span className="text-lg font-black text-white tracking-tighter">₹{winner.prize_amount?.toLocaleString() || 0}</span>
+                     <span className="text-lg font-black text-white tracking-tighter">₹{winner.prize_amount?.toLocaleString() ?? '0'}</span>
                   </td>
                   <td className="px-8 py-8">
                      {getStatusBadge(winner.status)}

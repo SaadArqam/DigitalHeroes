@@ -40,7 +40,7 @@ export default function AdminDrawsPage() {
       setMonth('');
       await loadHistory();
     } else {
-      toast(res.message || 'Creation Error', 'error');
+      toast(res.message ?? 'Creation Error', 'error');
     }
     setOpLoading(false);
   };
@@ -52,7 +52,7 @@ export default function AdminDrawsPage() {
       setSimulation({ ...res.data, drawId });
       toast('Simulation Complete', 'success');
     } else {
-      toast(res.message || 'Sim Error', 'error');
+      toast(res.message ?? 'Sim Error', 'error');
     }
     setOpLoading(false);
   };
@@ -67,7 +67,7 @@ export default function AdminDrawsPage() {
       setSimulation(null);
       await loadHistory();
     } else {
-      toast(res.message || 'Publish Error', 'error');
+      toast(res.message ?? 'Publish Error', 'error');
     }
     setOpLoading(false);
   };
@@ -191,9 +191,9 @@ export default function AdminDrawsPage() {
                   <tbody className="divide-y divide-slate-800/30">
                      {history.length > 0 ? history.map((draw, i) => (
                         <tr key={i} className="group hover:bg-slate-900/20 transition-all">
-                           <td className="px-8 py-8 font-black text-white uppercase tracking-tighter text-xl">{draw.month}</td>
+                           <td className="px-8 py-8 font-black text-white uppercase tracking-tighter text-xl">{draw.month ?? 'N/A'}</td>
                            <td className="px-8 py-8">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-1.5 px-3 bg-slate-900 border border-slate-800 rounded-lg">{draw.mode}</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-1.5 px-3 bg-slate-900 border border-slate-800 rounded-lg">{draw.mode ?? 'MODE'}</span>
                            </td>
                            <td className="px-8 py-8">
                               <div className="flex gap-2">
@@ -204,7 +204,7 @@ export default function AdminDrawsPage() {
                                  ))}
                               </div>
                            </td>
-                           <td className="px-8 py-8 font-black text-white text-lg">₹{draw.total_pool?.toLocaleString() || 0}</td>
+                           <td className="px-8 py-8 font-black text-white text-lg">₹{draw.total_pool?.toLocaleString() ?? '0'}</td>
                            <td className="px-8 py-8">
                               <span className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[9px] font-black uppercase tracking-widest">
                                  <CheckCircle2 className="w-3 h-3" /> Published
