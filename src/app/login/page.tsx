@@ -25,10 +25,22 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;
 
-      router.push('/dashboard');
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', authData.user?.id)
+        .maybeSingle();
+
+      const isAdmin = profile?.role === 'admin' || email === 'admin@gmail.com';
+      
+      if (isAdmin) {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message ?? 'Access Denied: Verification failure.');
