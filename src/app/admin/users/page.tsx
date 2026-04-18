@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAllUsers, updateSubscriptionStatus } from '@/app/actions/admin';
+import { getAllUsers, updateSubscriptionStatus, approveUser, rejectUser } from '@/app/actions/admin';
 import { 
   Users, Search, ChevronDown, ChevronUp, Mail, 
   Calendar, CreditCard, Target, Loader2, ShieldCheck,
@@ -26,22 +26,39 @@ export default function AdminUsersPage() {
   async function loadUsers() {
     setLoading(true);
     try {
-      const data = await getAllUsers();
-      setUsers(data);
-    } catch (err) {
-      toast('Sync Failure', 'error');
+      const res = await getAllUsers();
+      if (res.success) {
+        setUsers(res.data || []);
+      } else {
+        toast(res.message, 'error');
+      }
+    } catch (err: any) {
+      toast('Critical identity sync failure', 'error');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const handleStatusUpdate = async (userId: string, status: any) => {
     setActionLoading(userId);
     const res = await updateSubscriptionStatus(userId, status);
     if (res.success) {
-      toast('Status Propagated', 'success');
+      toast(res.message, 'success');
       await loadUsers();
     } else {
       toast(res.message ?? 'Update Failed', 'error');
+    }
+    setActionLoading(null);
+  };
+
+  const handleIdentityApproval = async (userId: string, approve: boolean) => {
+    setActionLoading(userId);
+    const res = approve ? await approveUser(userId) : await rejectUser(userId);
+    if (res.success) {
+      toast(res.message, 'success');
+      await loadUsers();
+    } else {
+      toast(res.message ?? 'Protocol Error', 'error');
     }
     setActionLoading(null);
   };
@@ -100,7 +117,16 @@ export default function AdminUsersPage() {
                           </div>
                           <div className="flex flex-col">
                              <span className="text-sm font-bold text-white tracking-tight">{user.email ?? 'Unknown Identity'}</span>
-                             <span className="text-[9px] font-black text-primary-end uppercase tracking-widest leading-none mt-1">{user.is_admin ? 'admin' : 'player'}</span>
+                             <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-black text-primary-end uppercase tracking-widest leading-none">{user.is_admin ? 'admin' : 'player'}</span>
+                                <span className={`text-[9px] font-black uppercase tracking-widest leading-none px-1.5 py-0.5 rounded border ${
+                                   user.status === 'approved' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 
+                                   user.status === 'rejected' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 
+                                   'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                                }`}>
+                                   {user.status ?? 'pending'}
+                                </span>
+                             </div>
                           </div>
                        </div>
                     </td>
@@ -126,7 +152,7 @@ export default function AdminUsersPage() {
                        {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-8 py-6 text-right">
-                       <button className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-500 hover:text-white transition-all">
+                       <button type="button" className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-500 hover:text-white transition-all">
                           {expandedId === user.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                        </button>
                     </td>
@@ -155,9 +181,10 @@ export default function AdminUsersPage() {
                                 <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                                    <CreditCard className="w-3 h-3" /> Membership Operations
                                 </h4>
-                                <div className="grid grid-cols-2 gap-3">
+                                 <div className="grid grid-cols-2 gap-3 mb-8">
                                    {['active', 'lapsed', 'cancelled'].map((status) => (
                                       <button
+                                        type="button"
                                         key={status}
                                         onClick={(e) => { e.stopPropagation(); handleStatusUpdate(user.id, status as any); }}
                                         disabled={actionLoading === user.id}
@@ -170,6 +197,28 @@ export default function AdminUsersPage() {
                                         {status}
                                       </button>
                                    ))}
+                                </div>
+
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                   <ShieldCheck className="w-3 h-3" /> Identity Verification Protocols
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                   <button
+                                     type="button"
+                                     onClick={(e) => { e.stopPropagation(); handleIdentityApproval(user.id, true); }}
+                                     disabled={actionLoading === user.id || user.status === 'approved'}
+                                     className="px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-emerald-600 border border-emerald-500 text-white hover:bg-emerald-700 disabled:opacity-30 transition-all"
+                                   >
+                                      Approve Citizen
+                                   </button>
+                                   <button
+                                     type="button"
+                                     onClick={(e) => { e.stopPropagation(); handleIdentityApproval(user.id, false); }}
+                                     disabled={actionLoading === user.id || user.status === 'rejected'}
+                                     className="px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-rose-600 border border-rose-500 text-white hover:bg-rose-700 disabled:opacity-30 transition-all"
+                                   >
+                                      Reject Citizen
+                                   </button>
                                 </div>
                              </div>
                           </div>

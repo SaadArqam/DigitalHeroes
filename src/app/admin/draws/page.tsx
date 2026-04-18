@@ -34,9 +34,13 @@ export default function AdminDrawsPage() {
   const handleCreate = async () => {
     if (!month) return toast('Protocol Error: Month required', 'error');
     setOpLoading(true);
-    const res = await createDraw(month, mode);
+    
+    // Format to full date YYYY-MM-01 for DB compatibility
+    const formattedMonth = month.length === 7 ? `${month}-01` : month;
+    
+    const res = await createDraw(formattedMonth, mode);
     if (res.success) {
-      toast('Draw Created', 'success');
+      toast(res.message, 'success');
       setMonth('');
       await loadHistory();
     } else {
@@ -50,7 +54,7 @@ export default function AdminDrawsPage() {
     const res = await simulateDraw(drawId, mode);
     if (res.success) {
       setSimulation({ ...res.data, drawId });
-      toast('Simulation Complete', 'success');
+      toast(res.message, 'success');
     } else {
       toast(res.message ?? 'Sim Error', 'error');
     }
@@ -63,7 +67,7 @@ export default function AdminDrawsPage() {
     setOpLoading(true);
     const res = await publishDraw(simulation.drawId, mode);
     if (res.success) {
-      toast('Draw Published', 'success');
+      toast(res.message, 'success');
       setSimulation(null);
       await loadHistory();
     } else {

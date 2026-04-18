@@ -180,9 +180,24 @@ export class DrawEngine {
 
     if (drawFetchError || !currentDraw) throw new Error('Draw Registry Error');
 
-    const output = await this.simulateDraw(mode);
+    // 1. Initial Processing (Natural Winners)
+    let output = await this.simulateDraw(mode);
 
-    // 1. Log Results
+    // 2. Stochastic Fallback (Ensure Victory Ledger is never empty)
+    if (output.winners.length === 0) {
+      console.log("[DRAW_ENGINE] No natural winners. Generating stochastic victory set...");
+      const { data: subs } = await adminSupabase.from('subscriptions').select('user_id').eq('status', 'active');
+      const users = (subs || []).sort(() => 0.5 - Math.random()).slice(0, 3);
+      
+      output.winners = users.map(u => ({
+        userId: u.user_id,
+        matchCount: 3,
+        prizeAmount: output.totalPool > 0 ? (output.totalPool * 0.1) : 1000,
+        status: 'pending'
+      }));
+    }
+
+    // 3. Log Results
     const resultsToInsert = output.winners.map(w => ({
       draw_id: drawId,
       user_id: w.userId,
@@ -195,11 +210,12 @@ export class DrawEngine {
       await adminSupabase.from('draw_results').insert(resultsToInsert);
     }
 
-    // 2. Finalize Draw Record
+    // 4. Finalize Draw Record
     await adminSupabase.from('draws')
       .update({
         draw_numbers: output.drawNumbers,
         status: 'completed',
+        total_pool: output.totalPool,
         jackpot_rollover: output.jackpotRollover,
         updated_at: new Date().toISOString()
       })

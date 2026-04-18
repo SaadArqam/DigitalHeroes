@@ -28,12 +28,17 @@ export default function AdminWinnersPage() {
   async function loadWinners() {
     setLoading(true);
     try {
-      const data = await getAllWinners();
-      setWinners(data);
-    } catch {
-      toast('Sync Failure', 'error');
+      const res = await getAllWinners();
+      if (res.success) {
+        setWinners(res.data || []);
+      } else {
+        toast(res.message, 'error');
+      }
+    } catch (err: any) {
+      toast('Victory ledger synchronization failed', 'error');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const handleViewProof = async (filePath: string) => {
@@ -54,7 +59,7 @@ export default function AdminWinnersPage() {
     setOpLoading(id);
     const res = await updateWinnerStatus(id, status);
     if (res.success) {
-      toast(`Protocol: ${status.toUpperCase()}`, 'success');
+      toast(res.message, 'success');
       await loadWinners();
     }
     setConfirmingAction(null);
@@ -99,7 +104,7 @@ export default function AdminWinnersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/30">
-              {winners.map((winner) => (
+              {winners.length > 0 ? winners.map((winner) => (
                 <tr key={winner.id} className="group hover:bg-slate-900/40 transition-all duration-300">
                   <td className="px-8 py-8">
                      <div className="flex items-center gap-4">
@@ -170,7 +175,16 @@ export default function AdminWinnersPage() {
                      </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                   <td colSpan={6} className="px-8 py-32 text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] bg-slate-900 border border-slate-800 text-slate-700 mb-6">
+                         <AlertCircle className="w-8 h-8 opacity-20" />
+                      </div>
+                      <p className="text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">No winners yet. Run a draw to synchronize the ledger.</p>
+                   </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
