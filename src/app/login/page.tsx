@@ -53,7 +53,7 @@ export default function LoginPage() {
         }, 1000);
       }
     } catch (err: any) {
-      setError(err.message ?? 'Unknown error' || 'Access denied. Please check your credentials.');
+      setError(err.message ?? 'Access denied. Please check your credentials.');
       setLoading(false);
     }
   }
