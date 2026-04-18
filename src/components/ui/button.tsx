@@ -13,20 +13,20 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = '', variant = 'primary', size = 'md', isLoading, icon, children, disabled, ...props }, ref) => {
     
-    const baseStyles = 'inline-flex items-center justify-center font-black uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer';
+    const baseStyles = 'inline-flex items-center justify-center font-black uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer';
     
     const variants = {
-      primary: 'bg-gradient-to-br from-[#7C3AED] to-[#3B82F6] text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5',
-      secondary: 'bg-[#1F2937] text-white border border-[#374151] hover:bg-[#374151]',
-      outline: 'bg-transparent border-2 border-[#374151] text-white hover:border-[#7C3AED] hover:text-[#7C3AED]',
-      ghost: 'bg-transparent text-[#94A3B8] hover:text-white hover:bg-white/5',
+      primary: 'bg-[#00FFA3] text-[#05070A] hover:shadow-[0_0_30px_rgba(0,255,163,0.4)] hover:-translate-y-0.5',
+      secondary: 'bg-white/5 text-white border border-white/10 hover:bg-white/10',
+      outline: 'bg-transparent border border-white/10 text-white hover:border-[#00FFA3] hover:text-[#00FFA3]',
+      ghost: 'bg-transparent text-[#8B949E] hover:text-white',
       danger: 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white',
     };
 
     const sizes = {
-      sm: 'px-4 py-2 text-[10px] rounded-lg',
-      md: 'px-8 py-4 text-xs rounded-xl',
-      lg: 'px-12 py-5 text-sm rounded-2xl',
+      sm: 'px-4 py-2 text-[9px] rounded-lg',
+      md: 'px-6 py-3.5 text-[10px] rounded-xl',
+      lg: 'px-10 py-5 text-[11px] rounded-2xl',
       icon: 'p-3 rounded-xl',
     };
 

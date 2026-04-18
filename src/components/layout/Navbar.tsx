@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { 
   Menu, X, LogOut, LayoutDashboard, ShieldCheck, 
-  Gamepad2, Info, Heart, Trophy, User
+  Gamepad2, Heart, Trophy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -23,24 +23,16 @@ export function Navbar() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) {
-        checkAdmin(session.user.id, session.user.email || '');
-      }
+      if (session?.user) checkAdmin(session.user.id, session.user.email || '');
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session?.user) {
-        checkAdmin(session.user.id, session.user.email || '');
-      } else {
-        setIsAdmin(false);
-      }
+      if (session?.user) checkAdmin(session.user.id, session.user.email || '');
+      else setIsAdmin(false);
     });
 
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => {
       subscription.unsubscribe();
@@ -49,16 +41,8 @@ export function Navbar() {
   }, []);
 
   async function checkAdmin(userId: string, email: string) {
-    if (email === 'admin@gmail.com') {
-      setIsAdmin(true);
-      return;
-    }
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin, role')
-      .eq('user_id', userId)
-      .maybeSingle();
-    
+    if (email === 'admin@gmail.com') return setIsAdmin(true);
+    const { data: profile } = await supabase.from('profiles').select('is_admin, role').eq('user_id', userId).maybeSingle();
     if (profile?.is_admin || profile?.role === 'admin') setIsAdmin(true);
   }
 
@@ -68,165 +52,85 @@ export function Navbar() {
     router.refresh();
   };
 
+  const dashboardLinks = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Impact', href: '/dashboard/impact', icon: Heart },
+    { name: 'Trophy', href: '/leaderboard', icon: Trophy },
+  ];
+
+  const publicLinks = [
+    { name: 'Protocol', href: '/how-it-works' },
+    { name: 'Impact', href: '/impact' },
+    { name: 'Archive', href: '/leaderboard' },
+  ];
+
+  // Hide Navbar on Login/Signup only. Keep on Admin for consistent navigation if needed, 
+  // but if the user wants a sidebar only on Admin, we hide it there too.
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const isAdminPage = pathname?.startsWith('/admin');
   if (isAuthPage || isAdminPage) return null;
 
-  const dashboardLinks = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Impact', href: '/dashboard/impact', icon: Heart },
-    { name: 'Rules', href: '/how-it-works', icon: Info },
-  ];
-
-  const adminLinks = [
-    { name: 'Users', href: '/admin/users', icon: User },
-    { name: 'Draws', href: '/admin/draws', icon: Gamepad2 },
-    { name: 'Winners', href: '/admin/winners', icon: Trophy },
-  ];
-
-  const publicLinks = [
-    { name: 'How it Works', href: '/how-it-works' },
-    { name: 'Impact', href: '/impact' },
-    { name: 'Leaderboard', href: '/leaderboard' },
-  ];
-
   return (
-    <nav 
-      className={`sticky top-0 left-0 right-0 z-[100] transition-all duration-500 ${
-        isScrolled 
-          ? 'py-4 px-6 md:px-12' 
-          : 'py-8 px-6 md:px-16'
-      }`}
-    >
-      <div 
-        className={`max-w-7xl mx-auto rounded-[2rem] transition-all duration-500 border border-white/5 flex items-center justify-between px-8 py-4 ${
-          isScrolled 
-            ? 'bg-[#0B0F1A]/80 backdrop-blur-2xl shadow-premium border-white/10' 
-            : 'bg-transparent'
-        }`}
-      >
-        <div className="flex items-center gap-12">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-primary-gradient rounded-xl flex items-center justify-center shadow-glow group-hover:scale-110 transition-transform">
-              <Gamepad2 className="w-6 h-6 text-white" />
+    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 py-6 px-4 md:px-8`}>
+      <div className={`max-w-7xl mx-auto rounded-2xl transition-all duration-500 border border-white/5 flex items-center justify-between px-6 py-4 ${
+        isScrolled ? 'bg-[#0D1117]/80 backdrop-blur-xl border-white/10 shadow-premium' : 'bg-transparent'
+      }`}>
+        <div className="flex items-center gap-10">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#00FFA3] rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,255,163,0.3)]">
+              <Gamepad2 className="w-6 h-6 text-[#05070A]" />
             </div>
-            <span className="text-2xl font-black text-white tracking-tighter uppercase italic">Green<span className="text-primary-end">Jack</span></span>
+            <span className="text-xl font-black text-white tracking-widest uppercase">Green<span className="text-[#00FFA3]">Jack</span></span>
           </Link>
 
-          {/* Nav Links */}
           <div className="hidden lg:flex items-center gap-8">
-            {!session ? (
-              publicLinks.map((link) => (
-                <Link 
-                  key={link.name} 
-                  href={link.href}
-                  className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted hover:text-white transition-colors"
-                >
-                  {link.name}
-                </Link>
-              ))
-            ) : (
-              <>
-                {dashboardLinks.map((link) => (
-                  <Link 
-                    key={link.name} 
-                    href={link.href}
-                    className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors flex items-center gap-2 ${
-                      pathname === link.href ? 'text-primary-end' : 'text-text-muted hover:text-white'
-                    }`}
-                  >
-                    <link.icon className="w-4 h-4" />
-                    {link.name}
-                  </Link>
-                ))}
-                {isAdmin && (
-                  <Link 
-                    href="/admin"
-                    className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors flex items-center gap-2 px-4 py-2 bg-primary-gradient/10 rounded-xl border border-primary-start/20 ${
-                      pathname.startsWith('/admin') ? 'text-white border-primary-start/50' : 'text-primary-end hover:text-white'
-                    }`}
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    Terminal
-                  </Link>
-                )}
-              </>
+            {(session ? dashboardLinks : publicLinks).map((link) => (
+              <Link key={link.name} href={link.href} className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-[#00FFA3] ${
+                pathname === link.href ? 'text-[#00FFA3]' : 'text-[#8B949E]'
+              }`}>
+                {link.name}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link href="/admin" className="text-[10px] font-black uppercase tracking-[0.2em] text-[#7C3AED] hover:text-white border border-[#7C3AED]/30 px-3 py-1.5 rounded-lg bg-[#7C3AED]/5">
+                Terminal
+              </Link>
             )}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-4">
           {!session ? (
             <div className="hidden md:flex items-center gap-4">
-              <Link href="/login">
-                <Button variant="ghost" className="text-white hover:bg-white/5 font-black uppercase tracking-widest text-[10px]">Portal Login</Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="rounded-xl px-6 font-black uppercase tracking-widest text-[10px] shadow-glow">Initialize</Button>
-              </Link>
+              <Link href="/login"><Button variant="ghost" size="sm">Auth</Button></Link>
+              <Link href="/signup"><Button size="sm">Initialize</Button></Link>
             </div>
           ) : (
-            <div className="flex items-center gap-4">
-               <button 
-                 onClick={handleLogout}
-                 className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-text-muted hover:text-rose-500 hover:border-rose-500/20 transition-all"
-                 title="Disconnect Terminal"
-               >
-                 <LogOut className="w-5 h-5" />
-               </button>
-            </div>
+            <button onClick={handleLogout} className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-[#8B949E] hover:text-red-500 transition-all">
+              <LogOut className="w-5 h-5" />
+            </button>
           )}
 
-          {/* Mobile Menu Toggle */}
-          <button 
-            className="lg:hidden w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
+          <button className="lg:hidden w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-32 left-6 right-6 lg:hidden bg-[#0B0F1A]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl z-[101]"
-          >
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="absolute top-28 left-4 right-4 lg:hidden bg-[#0D1117] border border-white/10 rounded-2xl p-8 shadow-2xl z-[101]">
             <div className="flex flex-col gap-6">
-               {(session ? [...dashboardLinks, ...(isAdmin ? [{name: 'Admin', href: '/admin', icon: ShieldCheck}] : [])] : publicLinks).map((link: any) => (
-                 <Link 
-                   key={link.name} 
-                   href={link.href}
-                   onClick={() => setMobileMenuOpen(false)}
-                   className="text-xl font-black text-white hover:text-primary-end transition-colors flex items-center gap-4"
-                 >
-                   {link.icon && <link.icon className="w-6 h-6 text-primary-end" />}
+               {(session ? [...dashboardLinks, ...(isAdmin ? [{name: 'Terminal', href: '/admin'}] : [])] : publicLinks).map((link: any) => (
+                 <Link key={link.name} href={link.href} onClick={() => setMobileMenuOpen(false)} className="text-lg font-black text-white hover:text-[#00FFA3] uppercase tracking-widest">
                    {link.name}
                  </Link>
                ))}
-               <hr className="border-white/5" />
-               {!session ? (
-                 <div className="flex flex-col gap-4">
-                    <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="secondary" className="w-full py-6 rounded-2xl font-black uppercase tracking-widest">Login</Button>
-                    </Link>
-                    <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                      <Button className="w-full py-6 rounded-2xl font-black uppercase tracking-widest shadow-glow">Sign Up</Button>
-                    </Link>
+               {!session && (
+                 <div className="grid grid-cols-2 gap-4 mt-4">
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)}><Button variant="secondary" className="w-full">Auth</Button></Link>
+                    <Link href="/signup" onClick={() => setMobileMenuOpen(false)}><Button className="w-full">Initiate</Button></Link>
                  </div>
-               ) : (
-                 <button 
-                   onClick={handleLogout}
-                   className="flex items-center gap-4 text-rose-500 font-black text-xl"
-                 >
-                   <LogOut className="w-6 h-6" /> Logout
-                 </button>
                )}
             </div>
           </motion.div>

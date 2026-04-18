@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0B1220;
-  --color-card: #151B2A;
-  --color-card-border: #1F2937;
-  --color-primary-start: #7C3AED;
-  --color-primary-end: #3B82F6;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
+  --color-background: #05070A;
+  --color-surface: #0D1117;
+  --color-primary-start: #00FFA3;
+  --color-primary-end: #7C3AED;
+  --color-text-primary: #E6EDF3;
+  --color-text-secondary: #8B949E;
+  --color-text-muted: #565f6a;
   
-  --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 30px -10px rgba(124, 58, 237, 0.4);
+  --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 30px -5px rgba(0, 255, 163, 0.2);
+  --shadow-glow-accent: 0 0 30px -5px rgba(124, 58, 237, 0.2);
 }
 
 @layer base {
@@ -21,55 +21,81 @@
   }
 
   body {
-    background-color: #0B1220;
-    color: #FFFFFF;
+    @apply bg-[#05070A] text-[#E6EDF3] antialiased overflow-x-hidden selection:bg-[#00FFA3]/30 selection:text-[#00FFA3];
     font-family: var(--font-inter), system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    @apply min-h-screen overflow-x-hidden selection:bg-purple-500/30 selection:text-white;
-  }
-
-  /* Fix for unreadable text - ensure high contrast */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-black tracking-tight text-white;
-  }
-
-  p {
-    @apply text-text-secondary leading-relaxed;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
 }
 
-@layer utilities {
-  .bg-primary-gradient {
-    background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
+@layer components {
+  .glass-panel {
+    @apply bg-white/[0.02] backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl transition-all duration-300;
   }
-  
+
+  .neon-glow {
+    @apply shadow-[0_0_25px_rgba(0,255,163,0.1)] border-[#00FFA3]/20;
+  }
+
+  .accent-glow {
+    @apply shadow-[0_0_25px_rgba(124,58,237,0.1)] border-[#7C3AED]/20;
+  }
+
   .text-gradient {
-    background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    display: inline-block;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#00FFA3] to-[#7C3AED];
   }
 
-  .glass-card {
-    background: rgba(21, 27, 42, 0.7);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  .text-gradient-white {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-white/40;
   }
 
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  .btn-primary {
+    @apply px-8 py-4 bg-[#00FFA3] text-[#05070A] font-black uppercase tracking-[0.3em] text-[10px] rounded-xl transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,255,163,0.3)] active:scale-95 disabled:opacity-20 disabled:pointer-events-none;
   }
-  
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+
+  .btn-secondary {
+    @apply px-8 py-4 bg-[#0D1117] border border-white/5 text-white font-black uppercase tracking-[0.3em] text-[10px] rounded-xl transition-all hover:bg-white/5 hover:border-white/10 active:scale-95;
+  }
+
+  .cyber-input {
+    @apply w-full bg-[#05070A] border border-white/10 rounded-xl px-6 py-5 text-sm font-black uppercase tracking-widest text-white transition-all focus:outline-none focus:border-[#00FFA3] focus:ring-1 focus:ring-[#00FFA3]/20 placeholder:text-[#3e454d];
+  }
+
+  .terminal-card {
+    @apply bg-[#0D1117] border border-white/5 rounded-2xl p-8 relative overflow-hidden transition-all duration-500 hover:border-white/10;
+  }
+
+  .status-badge {
+    @apply px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-[0.2em] leading-none border;
   }
 }
 
-/* Fix for animation layout shifts */
-.animate-in {
-  animation-duration: 300ms;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-[#05070A];
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/5 rounded-full hover:bg-[#00FFA3]/20 transition-all;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Animations */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.safari-scroll-fix {
+  -webkit-overflow-scrolling: touch;
 }

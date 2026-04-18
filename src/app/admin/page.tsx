@@ -1,7 +1,7 @@
 // src/app/admin/page.tsx
 import { createClient } from '@/lib/supabase/server';
 import { 
-  Users, Trophy, Heart, TrendingUp, ArrowUpRight, 
+  Users, Trophy, Heart, ArrowUpRight, 
   Activity, ShieldCheck, Mail
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -24,71 +24,70 @@ export default async function AdminDashboard() {
   const charityEstimate = totalPool * 0.15; // Platform logic: 15% to impact partners
 
   const stats = [
-    { label: 'Active Citizens', value: subscriberCount || 0, icon: Users, color: 'text-indigo-500' },
-    { label: 'Vault Liquidity', value: `₹${totalPool.toLocaleString()}`, icon: Trophy, color: 'text-amber-500' },
-    { label: 'Mission Support', value: `₹${charityEstimate.toLocaleString()}`, icon: Heart, color: 'text-rose-500' },
-    { label: 'System Uptime', value: '99.9%', icon: Activity, color: 'text-emerald-500' },
+    { label: 'Active Citizens', value: subscriberCount || 0, icon: Users, color: 'text-[#7C3AED]' },
+    { label: 'Vault Liquidity', value: `₹${totalPool.toLocaleString()}`, icon: Trophy, color: 'text-[#00FFA3]' },
+    { label: 'Mission Support', value: `₹${charityEstimate.toLocaleString()}`, icon: Heart, color: 'text-red-500' },
+    { label: 'System Uptime', value: '99.9%', icon: Activity, color: 'text-amber-500' },
   ];
 
   return (
     <div className="space-y-12">
       <header>
-        <div className="flex items-center gap-2 mb-2">
-           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Node Status: Administrative Root</span>
+        <div className="flex items-center gap-2 mb-3">
+           <div className="w-1.5 h-1.5 rounded-full bg-[#00FFA3] animate-pulse" />
+           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#8B949E]">Node Status: Administrative Root</span>
         </div>
-        <h1 className="text-5xl font-black text-white tracking-tight uppercase">System <span className="text-indigo-600 italic">Overview</span></h1>
+        <h1 className="text-5xl lg:text-7xl font-black text-white tracking-tighter uppercase leading-none">System <span className="text-gradient">Registry</span></h1>
       </header>
 
       {/* Metric Cluster */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-          <Card key={i} className="p-8 bg-[#0c0c12] border-slate-800 hover:border-slate-700 transition-all group shadow-2xl">
+          <Card key={i} className="p-6 bg-[#0D1117] border-white/5 hover:border-white/10 transition-all group">
             <div className="flex justify-between items-start mb-6">
-               <div className={`p-4 rounded-2xl bg-slate-900 border border-slate-800 ${stat.color} group-hover:scale-110 transition-transform`}>
+               <div className={`w-12 h-12 rounded-xl bg-[#05070A] border border-white/5 flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform shadow-inner`}>
                   <stat.icon className="w-6 h-6" />
                </div>
-               <ArrowUpRight className="w-4 h-4 text-slate-700" />
+               <ArrowUpRight className="w-4 h-4 text-[#8B949E]" />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{stat.label}</p>
-            <h4 className="text-3xl font-black text-white tracking-tighter">{stat.value}</h4>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#8B949E] mb-1.5">{stat.label}</p>
+            <h4 className="text-3xl font-black text-white tracking-tighter uppercase">{stat.value}</h4>
           </Card>
         ))}
       </div>
 
       <div className="grid lg:grid-cols-12 gap-8">
-        {/* Recruitment Stream */}
-        <Card className="lg:col-span-12 p-8 bg-[#0c0c12] border-slate-800 shadow-2xl">
+        <Card className="lg:col-span-12 p-8 bg-[#0D1117] border-white/5">
           <div className="flex items-center justify-between mb-8">
-             <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                <ShieldCheck className="w-5 h-5 text-indigo-500" />
-                Recent Access Requests
+             <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-3 italic">
+                <ShieldCheck className="w-6 h-6 text-[#7C3AED]" />
+                Recent Recruitment Stream
              </h3>
-             <button className="text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors">Manifest Logic</button>
+             <button className="text-[10px] font-black uppercase tracking-widest text-[#7C3AED] hover:text-white transition-colors">Manifest Logic</button>
           </div>
           
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-white/5">
             {recentUsers?.map((user: any) => (
-              <div key={user.id} className="py-6 flex items-center justify-between group">
+              <div key={user.id} className="py-5 flex items-center justify-between group">
                 <div className="flex items-center gap-6">
-                   <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 group-hover:text-white group-hover:border-indigo-500 transition-all font-black">
+                   <div className="w-12 h-12 rounded-xl bg-[#05070A] border border-white/5 flex items-center justify-center text-[#8B949E] group-hover:text-white group-hover:border-[#00FFA3]/30 transition-all font-black uppercase text-xl italic">
                       {user.email?.[0].toUpperCase()}
                    </div>
                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                         <Mail className="w-3 h-3 text-slate-500" />
-                         <span className="text-sm font-bold text-white tracking-tight">{user.email}</span>
+                      <div className="flex items-center gap-2 mb-1.5">
+                         <Mail className="w-3.5 h-3.5 text-[#8B949E]" />
+                         <span className="text-sm font-black text-white tracking-tight leading-none">{user.email}</span>
                       </div>
-                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                      <span className="text-[9px] font-black text-[#565f6a] uppercase tracking-widest">
                          Registered: {new Date(user.created_at).toLocaleDateString()}
                       </span>
                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                   <span className="px-3 py-1 bg-primary-gradient/10 text-primary-end border border-primary-end/20 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">
-                      {user.is_admin ? 'admin' : 'player'}
+                <div className="flex items-center gap-4">
+                   <span className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest leading-none border ${user.is_admin ? 'text-[#7C3AED] border-[#7C3AED]/20 bg-[#7C3AED]/5' : 'text-[#8B949E] border-white/10 bg-white/5'}`}>
+                      {user.is_admin ? 'root' : 'citizen'}
                    </span>
-                   <button className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all">
+                   <button className="p-2 rounded-lg bg-[#05070A] border border-white/5 text-[#8B949E] hover:text-white transition-all">
                       <ArrowUpRight className="w-4 h-4" />
                    </button>
                 </div>

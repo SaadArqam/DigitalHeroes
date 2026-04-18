@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Trophy, Zap, Info, ArrowRight, CheckCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 interface DrawsCardProps {
   latestDraw?: { winning_numbers: number[]; draw_date: string };
@@ -21,99 +20,85 @@ export function DrawsCard({ latestDraw, userResult, currentPool = 125000 }: Draw
   }, []);
 
   return (
-    <Card variant="default" className="relative h-full overflow-hidden !p-0 border-card-border transition-all hover:shadow-lg hover:-translate-y-1">
-        {/* Deep Galaxy Gradient */}
-        <div className="absolute inset-0 bg-[#0A0D1E]" />
+    <Card className="relative h-full overflow-hidden !p-0 border-white/10 transition-all hover:border-[#00FFA3]/30">
+        <div className="absolute inset-0 bg-[#05070A]" />
         
-        {/* Animated Nebulas */}
+        {/* Animated Highlights */}
         <motion.div
-          animate={{ x: [0, 40, 0], y: [0, -20, 0], scale: [1, 1.1, 1] }}
+          animate={{ x: [0, 40, 0], y: [0, -20, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-24 -right-24 w-[30rem] h-[30rem] bg-primary-start/10 rounded-full blur-[100px] pointer-events-none"
-        />
-        <motion.div
-          animate={{ x: [0, -30, 0], y: [0, 40, 0], scale: [1.1, 1, 1.1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute -bottom-16 -left-16 w-[25rem] h-[25rem] bg-primary-end/10 rounded-full blur-[100px] pointer-events-none"
+          className="absolute -top-24 -right-24 w-96 h-96 bg-[#00FFA3]/5 rounded-full blur-[100px] pointer-events-none"
         />
 
-        <div className="relative z-10 h-full flex flex-col p-10">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-12">
+        <div className="relative z-10 h-full flex flex-col p-8">
+          <div className="flex justify-between items-start mb-10">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-xl">
-                <Trophy className="w-6 h-6 text-primary-start" />
+              <div className="w-10 h-10 rounded-xl bg-[#0D1117] border border-white/5 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-[#00FFA3]" />
               </div>
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-[0.3em] text-text-muted mb-1 italic">Royal Lottery Phase</span>
-                <h2 className="text-2xl font-black text-white tracking-tighter uppercase">Mega Draw <span className="text-primary-end">#82</span></h2>
+                <span className="block text-[8px] font-black uppercase tracking-[0.3em] text-[#8B949E] mb-1">Protocol Phase</span>
+                <h2 className="text-xl lg:text-3xl font-black text-white tracking-tighter uppercase leading-none italic">Royal Draw <span className="text-[#00FFA3]">#82</span></h2>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-md">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Live Pool</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#00FFA3]/5 border border-[#00FFA3]/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00FFA3] animate-pulse" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#00FFA3]">Live Node</span>
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col justify-center gap-10">
-            {/* Current Pool & Potential */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="flex-1 flex flex-col justify-center gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted flex items-center gap-2">
-                  Current Draw Pool <Info className="w-3 h-3" />
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#8B949E] flex items-center gap-2">
+                  Pool Liquidity <Info className="w-3 h-3" />
                 </p>
-                <div className="text-5xl font-black text-white tracking-tighter">
+                <div className="text-4xl lg:text-5xl font-black text-white tracking-tighter uppercase">
                   ₹{currentPool.toLocaleString()}
                 </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: '75%' }}
                     transition={{ duration: 2, delay: 1, ease: 'easeOut' }}
-                    className="h-full bg-primary-gradient shadow-glow"
+                    className="h-full bg-[#00FFA3] shadow-[0_0_15px_rgba(0,255,163,0.5)]"
                   />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted">Target Probability</p>
-                <div className="text-5xl font-black tracking-tighter text-gradient">
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#8B949E]">Jackpot Target</p>
+                <div className="text-4xl lg:text-5xl font-black tracking-tighter text-gradient uppercase">
                   ₹{(currentPool * 0.4).toLocaleString()}
                 </div>
-                <p className="text-[10px] font-bold text-text-muted italic">Based on 5-match jackpot prediction</p>
+                <p className="text-[9px] font-black text-[#8B949E] uppercase tracking-widest leading-none">5-match projection</p>
               </div>
             </div>
 
-            {/* Lottery Reveal Animation */}
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center gap-2">
-                <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" /> Latest Winning Sequence
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#8B949E] mb-5 flex items-center gap-2">
+                <Zap className="w-3 h-3 text-[#00FFA3] fill-[#00FFA3]" /> Execution Vector
               </p>
-              <div className="flex gap-4 flex-wrap">
-                {(latestDraw?.winning_numbers || [7, 14, 28, 32, 41]).map((num, i) => (
+              <div className="flex gap-3 flex-wrap">
+                {(latestDraw?.winning_numbers || [7, 14, 28, 32, 41, 45]).map((num, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 20, scale: 0.5 }}
-                    animate={reveal ? { opacity: 1, y: 0, scale: 1 } : {}}
-                    transition={{ 
-                      delay: 0.5 + (i * 0.15), 
-                      type: 'spring', 
-                      stiffness: 260, 
-                      damping: 20 
-                    }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={reveal ? { opacity: 1, scale: 1 } : {}}
+                    transition={{ delay: 0.2 + (i * 0.1) }}
                     className={`
-                      w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-2xl relative group
+                      w-11 h-11 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center font-black text-lg relative group transition-all
                       ${userResult?.match_count && i < userResult.match_count 
-                        ? 'bg-primary-gradient text-white border-none scale-110 z-20 shadow-glow' 
-                        : 'bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors'
+                        ? 'bg-[#00FFA3] text-[#05070A] shadow-[0_0_20px_rgba(0,255,163,0.4)]' 
+                        : 'bg-white/5 border border-white/5 text-white'
                       }
                     `}
                   >
                     {num}
                     {userResult?.match_count && i < userResult.match_count && (
-                      <div className="absolute -top-2 -right-2 bg-white text-emerald-600 rounded-full p-1 shadow-lg">
-                        <CheckCircle className="w-3 h-3" />
+                      <div className="absolute -top-1.5 -right-1.5 bg-white text-emerald-600 rounded-full p-0.5 shadow-lg">
+                        <CheckCircle className="w-2.5 h-2.5" />
                       </div>
                     )}
                   </motion.div>
@@ -122,23 +107,22 @@ export function DrawsCard({ latestDraw, userResult, currentPool = 125000 }: Draw
             </div>
           </div>
 
-          {/* Footer Info */}
-          <div className="mt-12 flex items-center justify-between border-t border-white/5 pt-6">
+          <div className="mt-10 flex items-center justify-between border-t border-white/5 pt-6">
             <div className="flex items-center gap-3">
-              <div className="flex -space-x-3">
+              <div className="flex -space-x-2">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className={`w-8 h-8 rounded-full border-2 border-[#0A0D1E] bg-input-bg flex items-center justify-center text-[10px] font-bold text-white`}>
-                    {String.fromCharCode(64 + i)}
+                  <div key={i} className="w-7 h-7 rounded-full border border-[#05070A] bg-[#0D1117] flex items-center justify-center text-[8px] font-black text-[#8B949E] uppercase">
+                    ID-{i}
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] font-bold text-text-muted tracking-wide">
-                <span className="text-white">14.2k</span> Citizens participating
+              <p className="text-[9px] font-black text-[#8B949E] uppercase tracking-widest">
+                <span className="text-white">14.2k</span> PARTICIPANTS
               </p>
             </div>
             
-            <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary-end hover:text-white transition-colors">
-              Protocol Rules <ArrowRight className="w-3 h-3" />
+            <button className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-[#00FFA3] hover:text-white transition-colors">
+              RULES <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         </div>

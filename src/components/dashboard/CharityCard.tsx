@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, Globe, ArrowUpRight, ExternalLink } from 'lucide-react';
+import { Heart, ArrowUpRight, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 interface CharityPreference {
@@ -22,52 +22,52 @@ export function CharityCard({
   const estimatedImpact = (planAmount * (preference?.contribution_percentage || 0)) / 100;
 
   return (
-    <div className="bg-[#111827] border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden h-full flex flex-col group">
-      <div className="flex justify-between items-start mb-8">
+    <div className="bg-[#0D1117]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden h-full flex flex-col group transition-all hover:border-red-500/30">
+      <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500">
-            <Heart className="w-6 h-6 fill-rose-500/10" />
+          <div className="w-10 h-10 rounded-xl bg-[#05070A] border border-white/5 flex items-center justify-center text-red-500 shadow-inner">
+            <Heart className="w-5 h-5 transition-transform group-hover:scale-110" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-white tracking-tight leading-none mb-1">Impact</h3>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Global Contribution</p>
+            <h3 className="text-lg font-black text-white tracking-tight leading-none mb-1 uppercase">Impact</h3>
+            <p className="text-[9px] font-black text-[#8B949E] uppercase tracking-widest leading-none">Global Sector</p>
           </div>
         </div>
         <Link 
           href="/modify-impact"
-          className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-500 hover:text-white hover:border-slate-700 transition-all"
+          className="p-2.5 bg-[#05070A] border border-white/5 rounded-lg text-[#8B949E] hover:text-white transition-all"
         >
           <ExternalLink className="w-4 h-4" />
         </Link>
       </div>
 
-      <div className="flex-1 space-y-6">
+      <div className="flex-1 space-y-5">
         <div>
-           <h4 className="text-lg font-black text-white tracking-tight mb-2">
-             {preference?.charities?.name || 'Protocol Awaiting Choice'}
+           <h4 className="text-lg font-black text-white tracking-tight leading-none mb-1.5 uppercase">
+             {preference?.charities?.name || 'Awaiting Selection'}
            </h4>
-           <p className="text-xs font-bold text-slate-500 leading-relaxed line-clamp-2 uppercase tracking-tighter">
-             {preference?.charities?.description || 'Synchronize your impact partner to begin mission support.'}
+           <p className="text-[10px] font-black text-[#8B949E] leading-relaxed uppercase tracking-widest min-h-[2.5rem]">
+             {preference?.charities?.description || 'Synchronize impact node to initiate mission support.'}
            </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-           <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-2xl">
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Percentage</p>
-              <p className="text-xl font-black text-white">{preference?.contribution_percentage || 0}%</p>
+           <div className="p-4 bg-[#05070A]/50 border border-white/5 rounded-xl">
+              <p className="text-[8px] font-black text-[#8B949E] uppercase tracking-widest mb-1 leading-none">Allocation</p>
+              <p className="text-xl font-black text-white leading-none">{preference?.contribution_percentage || 0}%</p>
            </div>
-           <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-2xl">
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Mo. Estimate</p>
-              <p className="text-xl font-black text-emerald-500">₹{estimatedImpact.toFixed(2)}</p>
+           <div className="p-4 bg-[#05070A]/50 border border-white/5 rounded-xl">
+              <p className="text-[8px] font-black text-[#8B949E] uppercase tracking-widest mb-1 leading-none">Mthly Est.</p>
+              <p className="text-xl font-black text-[#00FFA3] leading-none">₹{estimatedImpact.toFixed(0)}</p>
            </div>
         </div>
       </div>
 
       <Link 
         href="/modify-impact" 
-        className="mt-8 w-full py-4 bg-slate-900 border border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-center text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center justify-center gap-2 group/btn"
+        className="mt-6 w-full py-4 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-[0.3em] text-center text-[#8B949E] hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 group/btn"
       >
-        Modify Impact <ArrowUpRight className="w-3 h-3 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+        Modify Protocol <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
       </Link>
     </div>
   );

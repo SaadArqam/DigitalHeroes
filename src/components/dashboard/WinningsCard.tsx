@@ -36,10 +36,10 @@ function useCountUp(target: number, duration = 2000) {
 }
 
 const STATUS_CONFIG: Record<string, { icon: any, color: string, label: string }> = {
-  paid:      { icon: ArrowUpRight, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Treasury Paid' },
-  completed: { icon: ArrowUpRight, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Completed' },
-  pending:   { icon: Clock, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', label: 'In Audit' },
-  verified:  { icon: History, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20', label: 'Verified' },
+  paid:      { icon: ArrowUpRight, color: 'text-[#00FFA3] bg-[#00FFA3]/5 border-[#00FFA3]/20', label: 'Paid' },
+  completed: { icon: ArrowUpRight, color: 'text-[#00FFA3] bg-[#00FFA3]/5 border-[#00FFA3]/20', label: 'Settled' },
+  pending:   { icon: Clock, color: 'text-amber-500 bg-amber-500/5 border-amber-500/20', label: 'Audit' },
+  verified:  { icon: History, color: 'text-[#7C3AED] bg-[#7C3AED]/5 border-[#7C3AED]/20', label: 'Verified' },
 };
 
 export function WinningsCard({ results }: { results: DrawResult[] }) {
@@ -57,43 +57,39 @@ export function WinningsCard({ results }: { results: DrawResult[] }) {
   const animatedPending = useCountUp(pendingTotal);
 
   return (
-    <Card variant="glass" className="h-full group transition-all hover:shadow-lg hover:-translate-y-1">
-        {/* Header */}
-        <div className="flex items-start justify-between relative z-10 mb-8">
+    <Card className="p-6 h-full flex flex-col group transition-all hover:border-[#00FFA3]/30">
+        <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-500">
-              <Landmark className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-[#05070A] border border-white/5 flex items-center justify-center text-[#00FFA3] shadow-inner group-hover:scale-110 transition-transform">
+              <Landmark className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-black text-white text-xl tracking-tight leading-none mb-1">Treasury</h3>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">Asset Registry</p>
+              <h3 className="font-black text-white text-lg tracking-tight uppercase leading-none mb-1">Treasury</h3>
+              <p className="text-[9px] font-black text-[#8B949E] uppercase tracking-widest leading-none">Asset Registry</p>
             </div>
           </div>
-          <div className="px-4 py-2 bg-card border border-card-border text-white rounded-2xl flex items-center gap-2">
-             <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-             <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Active Yield</span>
+          <div className="px-3 py-1 bg-[#00FFA3]/5 border border-[#00FFA3]/20 rounded-lg flex items-center gap-2">
+             <TrendingUp className="w-3 h-3 text-[#00FFA3]" />
+             <span className="text-[8px] font-black uppercase tracking-widest text-[#00FFA3]">Yield</span>
           </div>
         </div>
 
-        {/* Treasury Stats Section */}
-        <div className="mb-8 relative z-10">
-          <div className="p-8 rounded-[2rem] bg-input-bg border border-input-border shadow-2xl relative overflow-hidden group/box">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-end/10 blur-[50px] -mr-16 -mt-16 pointer-events-none group-hover/box:bg-primary-end/20 transition-colors" />
-            
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+        <div className="mb-6">
+          <div className="p-6 rounded-xl bg-[#05070A]/50 border border-white/5 relative overflow-hidden">
+            <div className="flex flex-col gap-4 relative z-10">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted mb-2">Portfolio Balance</p>
-                <div className="flex items-center gap-2">
-                  <IndianRupee className="w-8 h-8 text-primary-end" />
-                  <h3 className="text-5xl font-black tracking-tighter text-white">
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#8B949E] mb-2 leading-none">Net Balance</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-sm font-black text-[#8B949E]">₹</span>
+                  <h3 className="text-4xl font-black tracking-tighter text-white uppercase">
                     {animatedTotal.toLocaleString()}
                   </h3>
                 </div>
               </div>
               
-              <div className="w-full md:w-auto p-4 rounded-2xl bg-card border border-card-border backdrop-blur-sm">
-                <p className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Awaiting Transfer</p>
-                <p className="text-xl font-black text-emerald-500">
+              <div className="pt-4 border-t border-white/5">
+                <p className="text-[8px] font-black uppercase tracking-widest text-[#8B949E] mb-1.5 leading-none">Pending Protocol</p>
+                <p className="text-lg font-black text-[#00FFA3] uppercase tracking-tighter">
                   +₹{animatedPending.toLocaleString()}
                 </p>
               </div>
@@ -101,17 +97,11 @@ export function WinningsCard({ results }: { results: DrawResult[] }) {
           </div>
         </div>
 
-        {/* Transaction History Ledger */}
-        <div className="flex-1 overflow-auto space-y-3 relative z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">Yield Logs</span>
-            <div className="h-[1px] flex-1 bg-card-border" />
-          </div>
-
+        <div className="flex-1 space-y-3">
           <AnimatePresence>
             {safe.length > 0 ? (
-              <div className="space-y-3">
-                {safe.slice(0, 5).map((result, i) => {
+              <div className="space-y-2">
+                {safe.slice(0, 3).map((result) => {
                   const config = STATUS_CONFIG[result.status] || STATUS_CONFIG.pending;
                   const Icon = config.icon;
                   
@@ -120,23 +110,23 @@ export function WinningsCard({ results }: { results: DrawResult[] }) {
                       key={result.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="group/item flex items-center justify-between p-4 rounded-[1.5rem] bg-card border border-card-border hover:border-primary-start/30 transition-all duration-300"
+                      className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-input-bg border border-input-border flex items-center justify-center font-black text-white text-xs shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-[#05070A] border border-white/5 flex items-center justify-center font-black text-white text-[10px]">
                           {result.match_count}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-white tracking-tight leading-tight">Match Victory</p>
-                          <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">
+                          <p className="text-xs font-black text-white uppercase tracking-tight leading-none mb-1">Match</p>
+                          <p className="text-[8px] text-[#8B949E] font-black uppercase tracking-widest">
                             {new Date(result.date || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </p>
                         </div>
                       </div>
                       
                       <div className="text-right">
-                        <p className="text-base font-black text-white leading-tight mb-2">₹{Number(result.winnings || 0).toLocaleString()}</p>
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${config.color}`}>
+                        <p className="text-sm font-black text-white uppercase leading-none mb-2 tracking-tighter">₹{Number(result.winnings || 0).toLocaleString()}</p>
+                        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border ${config.color}`}>
                            <Icon className="w-2.5 h-2.5" /> {config.label}
                         </div>
                       </div>
@@ -145,25 +135,21 @@ export function WinningsCard({ results }: { results: DrawResult[] }) {
                 })}
               </div>
             ) : (
-              <div className="py-12 flex flex-col items-center justify-center text-center">
-                <div className="w-20 h-20 rounded-[2rem] bg-input-bg border-2 border-dashed border-input-border flex items-center justify-center mb-6">
-                  <Landmark className="w-8 h-8 text-text-muted" />
-                </div>
-                <h4 className="font-black text-white text-xl mb-1">Passive Treasury</h4>
-                <p className="text-sm text-text-secondary font-bold max-w-[200px] leading-relaxed">Victory assets will materialize after validation.</p>
+              <div className="py-8 flex flex-col items-center justify-center text-center opacity-20">
+                <Landmark className="w-8 h-8 text-[#8B949E] mb-3" />
+                <p className="text-[9px] font-black text-[#8B949E] uppercase tracking-widest">No assets logged</p>
               </div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Footer */}
         {safe.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-card-border flex items-center justify-between">
+          <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
              <div className="flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">Audited Payload</span>
+                <Shield className="w-3 h-3 text-[#00FFA3]" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-[#8B949E]">Verified Node</span>
              </div>
-             <button className="text-[9px] font-black uppercase tracking-widest text-primary-end hover:text-white transition-colors">Withdraw</button>
+             <button className="text-[8px] font-black uppercase tracking-widest text-[#00FFA3] hover:text-white transition-colors">Withdraw</button>
           </div>
         )}
     </Card>
